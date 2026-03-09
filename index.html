@@ -1,1 +1,1059 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Grid Drawer (Points / Lines / Circles)</title>
+  <style>
+    :root{
+      --bg:#0f1115;
+      --panel:#171b22;
+      --ink:#e9eef7;
+      --muted:#aab4c4;
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius: 12px;
+    }
+    *{ box-sizing:border-box; }
+    html,body{
+      height:100%;
+      margin:0;
+      background:var(--bg);
+      color:var(--ink);
+      font:14px/1.35 system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      overflow:hidden;
+      touch-action:none;
+    }
+    canvas{
+      position:fixed;
+      inset:0;
+      display:block;
+      z-index:0;
+      cursor: grab;
+    }
+    canvas:active{ cursor: grabbing; }
 
+    .panel{
+      position:fixed;
+      z-index:10;
+      background:rgba(23,27,34,.96);
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .panelHeader{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      padding:10px 10px 8px;
+      border-bottom:1px solid rgba(255,255,255,.10);
+    }
+    .panelTitle{
+      display:flex;
+      align-items:baseline;
+      gap:8px;
+      min-width:0;
+    }
+    .panelHeaderRight{
+      display:flex;
+      gap:8px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+    .panelContent{ padding:10px; }
+    .panel.collapsed .panelContent{ display:none; }
+    .panel.collapsed .panelHeader{ border-bottom:none; padding-bottom:10px; }
+
+    #toolbox{
+      top:14px; left:14px;
+      width:min(560px, calc(100vw - 28px));
+    }
+
+    #zoomBox{
+      top:14px; right:14px;
+      padding:10px;
+      display:flex;
+      gap:8px;
+      align-items:center;
+    }
+
+    #legend{
+      right:14px; bottom:14px;
+      width:min(520px, calc(100vw - 28px));
+      max-height:min(45vh, 520px);
+      overflow:auto;
+    }
+
+    #errorBox{
+      left:50%;
+      top:14px;
+      transform:translateX(-50%);
+      max-width:min(780px, calc(100vw - 28px));
+      padding:10px 12px;
+      border-color: rgba(255,80,80,.35);
+      background:rgba(60,15,15,.95);
+      display:none;
+      z-index:20;
+      white-space:pre-wrap;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size:12px;
+      line-height:1.3;
+    }
+
+    .row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .row + .row{ margin-top:10px; }
+
+    label{ color:var(--muted); font-size:12px; }
+    select,input,button{
+      font:inherit;
+      color:var(--ink);
+      background:#10131a;
+      border:1px solid rgba(255,255,255,.14);
+      border-radius:10px;
+      padding:8px 10px;
+      outline:none;
+    }
+    input{ width:90px; }
+    select{ padding-right:28px; }
+    button{
+      cursor:pointer;
+      background:#0f1626;
+      user-select:none;
+    }
+    button:hover{ filter:brightness(1.08); }
+    button:active{ transform: translateY(1px); }
+
+    .btn-danger{
+      background:#2a1111;
+      border-color: rgba(255,100,100,.25);
+    }
+    .btn-ok{
+      background:#0f1f16;
+      border-color: rgba(120,255,170,.20);
+    }
+    .btn-icon{
+      padding:6px 10px;
+      background:transparent;
+      border-color: rgba(255,255,255,.14);
+      min-width:38px;
+    }
+
+    .tiny{ font-size:12px; color:var(--muted); }
+    .spacer{ flex:1; }
+
+    .legendList{ display:flex; flex-direction:column; gap:8px; }
+    .item{
+      display:flex; align-items:flex-start; gap:10px;
+      padding:8px 8px;
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:12px;
+      background:rgba(16,19,26,.75);
+    }
+    .item .meta{ flex:1; min-width:0; }
+    .item .meta .name{ font-weight:600; }
+    .item .meta .desc{ color:var(--muted); font-size:12px; word-break:break-word; }
+    .item .actions{ display:flex; gap:6px; }
+    .swatch{
+      width:12px; height:12px; border-radius:3px; margin-top:3px;
+      border:1px solid rgba(255,255,255,.25);
+      flex:0 0 auto;
+    }
+
+    .hint{
+      margin-top:8px;
+      color:var(--muted);
+      font-size:12px;
+    }
+
+    input[type="number"]{ -moz-appearance:textfield; }
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
+  </style>
+</head>
+<body>
+  <canvas id="c"></canvas>
+
+  <div id="errorBox" class="panel"></div>
+
+  <div id="toolbox" class="panel">
+    <div class="panelHeader">
+      <div class="panelTitle">
+        <b>Tools</b>
+        <span class="tiny">draw stuff</span>
+      </div>
+      <div class="panelHeaderRight">
+        <button id="toggleToolbox" class="btn-icon" title="Minimise/Expand">▾</button>
+      </div>
+    </div>
+
+    <div class="panelContent">
+      <div class="row">
+        <div>
+          <label for="mode">Tool</label><br/>
+          <select id="mode">
+            <option value="point">point</option>
+            <option value="between">line between</option>
+            <option value="through">line through</option>
+            <option value="circle">circle</option>
+          </select>
+        </div>
+
+        <div id="fields" class="row" style="align-items:flex-end;"></div>
+
+        <div class="spacer"></div>
+
+        <div>
+          <label>&nbsp;</label><br/>
+          <button id="submit">Submit</button>
+        </div>
+      </div>
+
+      <div class="hint">
+        Drag the canvas to <b>pan</b>. Zoom uses the buttons top-right. Scrolling does nothing.
+      </div>
+    </div>
+  </div>
+
+  <div id="zoomBox" class="panel">
+    <button id="zoomOut" title="Zoom out">−</button>
+    <button id="zoomIn" title="Zoom in">+</button>
+    <button id="reset" title="Reset zoom & pan">Reset</button>
+    <span class="tiny" id="zoomReadout"></span>
+  </div>
+
+  <div id="legend" class="panel">
+    <div class="panelHeader">
+      <div class="panelTitle">
+        <b>Legend</b>
+        <span class="tiny" id="count"></span>
+      </div>
+
+      <div class="panelHeaderRight">
+        <button id="toggleLegend" class="btn-icon" title="Minimise/Expand">▾</button>
+        <button id="exportCsv" class="btn-ok" title="Export all elements as CSV">Export CSV</button>
+        <button id="importCsv" class="btn-ok" title="Import elements from CSV">Import CSV</button>
+        <button id="clearAll" class="btn-danger" title="Delete everything">Clear</button>
+      </div>
+    </div>
+
+    <div class="panelContent">
+      <div class="legendList" id="legendList"></div>
+      <div class="hint">
+        Checkbox toggles visibility. [x] deletes. CSV Export/Import saves/loads everything you drew.
+      </div>
+    </div>
+  </div>
+
+  <input id="importFile" type="file" accept=".csv,text/csv" style="display:none" />
+
+<script>
+(() => {
+  const LS_TOOL = 'gridDrawer.toolboxCollapsed';
+  const LS_LEGEND = 'gridDrawer.legendCollapsed';
+
+  const errorBox = document.getElementById('errorBox');
+  function showError(msg){
+    errorBox.style.display = 'block';
+    errorBox.textContent = msg;
+  }
+  function clearError(){
+    errorBox.style.display = 'none';
+    errorBox.textContent = '';
+  }
+
+  window.addEventListener('error', (e) => {
+    showError('JavaScript error:\n' + (e.message || 'Unknown') + '\n' + (e.filename || '') + ':' + (e.lineno || '') );
+  });
+  window.addEventListener('unhandledrejection', (e) => {
+    showError('Unhandled promise rejection:\n' + (e.reason?.message || String(e.reason || 'Unknown')));
+  });
+
+  function setCollapsed(panelEl, btnEl, collapsed){
+    panelEl.classList.toggle('collapsed', collapsed);
+    btnEl.textContent = collapsed ? '▸' : '▾';
+  }
+  function loadCollapsed(key){ return localStorage.getItem(key) === '1'; }
+  function saveCollapsed(key, collapsed){ localStorage.setItem(key, collapsed ? '1' : '0'); }
+
+  const toolboxPanel = document.getElementById('toolbox');
+  const legendPanel = document.getElementById('legend');
+  const toggleToolboxBtn = document.getElementById('toggleToolbox');
+  const toggleLegendBtn = document.getElementById('toggleLegend');
+
+  let toolboxCollapsed = loadCollapsed(LS_TOOL);
+  let legendCollapsed = loadCollapsed(LS_LEGEND);
+  setCollapsed(toolboxPanel, toggleToolboxBtn, toolboxCollapsed);
+  setCollapsed(legendPanel, toggleLegendBtn, legendCollapsed);
+
+  toggleToolboxBtn.addEventListener('click', () => {
+    toolboxCollapsed = !toolboxCollapsed;
+    setCollapsed(toolboxPanel, toggleToolboxBtn, toolboxCollapsed);
+    saveCollapsed(LS_TOOL, toolboxCollapsed);
+  });
+  toggleLegendBtn.addEventListener('click', () => {
+    legendCollapsed = !legendCollapsed;
+    setCollapsed(legendPanel, toggleLegendBtn, legendCollapsed);
+    saveCollapsed(LS_LEGEND, legendCollapsed);
+  });
+
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
+  if(!ctx){
+    showError('Canvas 2D context could not be created.');
+    return;
+  }
+
+  const DPR = () => Math.max(1, Math.min(3, window.devicePixelRatio || 1));
+  let W = 0, H = 0;
+
+  function resize() {
+    W = window.innerWidth;
+    H = window.innerHeight;
+    const dpr = DPR();
+    canvas.width = Math.floor(W * dpr);
+    canvas.height = Math.floor(H * dpr);
+    canvas.style.width = W + 'px';
+    canvas.style.height = H + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    draw();
+  }
+  window.addEventListener('resize', resize);
+
+  const baseHalfY = 10;
+  let zoom = 1;
+  const zoomMin = 0.1;
+  const zoomMax = 40;
+
+  // world coordinate at screen centre
+  let panX = 0;
+  let panY = 0;
+
+  function halfYUnits(){ return baseHalfY / zoom; }
+  function pxPerUnit(){ return H / (2 * halfYUnits()); }
+  function halfXUnits(){ return (W / pxPerUnit()) / 2; }
+
+  function worldToScreen(x,y){
+    return {
+      x: W/2 + (x - panX) * pxPerUnit(),
+      y: H/2 - (y - panY) * pxPerUnit()
+    };
+  }
+  function worldBounds(){
+    const hx = halfXUnits();
+    const hy = halfYUnits();
+    return { minX: panX - hx, maxX: panX + hx, minY: panY - hy, maxY: panY + hy };
+  }
+
+  const ROYGBIV = [
+    { name:'red',    value:'#ff3b30' },
+    { name:'orange', value:'#ff9500' },
+    { name:'yellow', value:'#ffd60a' },
+    { name:'green',  value:'#34c759' },
+    { name:'blue',   value:'#0a84ff' },
+    { name:'indigo', value:'#5e5ce6' },
+    { name:'violet', value:'#bf5af2' },
+  ];
+
+  const LINE_STYLES = {
+    solid: { width: 2, dash: [] },
+    thin:  { width: 1, dash: [] },
+    dashed:{ width: 2, dash: [10, 8] },
+    dotted:{ width: 2, dash: [2, 7] },
+  };
+
+  let seq = 1;
+  const features = [];
+
+  function nextId(){ return seq++; }
+  function ensureSeqAbove(maxId){ seq = Math.max(seq, (maxId|0) + 1); }
+
+  function addFeature(f){
+    features.push(f);
+    renderLegend();
+    draw();
+  }
+  function removeFeature(id){
+    const i = features.findIndex(f => f.id === id);
+    if(i >= 0) features.splice(i,1);
+    renderLegend();
+    draw();
+  }
+  function toggleFeature(id, on){
+    const f = features.find(f => f.id === id);
+    if(!f) return;
+    f.visible = on;
+    draw();
+  }
+  function clearAll(){
+    features.length = 0;
+    renderLegend();
+    draw();
+  }
+
+  function niceStep(targetUnits){
+    const steps = [0.1,0.2,0.5,1,2,5,10,20,50,100];
+    let best = steps[0], bestDiff = Math.abs(steps[0] - targetUnits);
+    for(const s of steps){
+      const d = Math.abs(s - targetUnits);
+      if(d < bestDiff){ best = s; bestDiff = d; }
+    }
+    return best;
+  }
+  function trimNum(n){
+    if(!Number.isFinite(n)) return '';
+    const s = (Math.abs(n) >= 1 ? n.toFixed(2) : n.toFixed(3));
+    return s.replace(/\.?0+$/,'');
+  }
+
+  function drawGrid(){
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle = '#0f1115';
+    ctx.fillRect(0,0,W,H);
+
+    const bounds = worldBounds();
+    const ppu = pxPerUnit();
+
+    const minorStep = niceStep(30 / ppu);
+    const majorStep = niceStep(120 / ppu);
+    const {minX,maxX,minY,maxY} = bounds;
+
+    const startXminor = Math.floor(minX / minorStep) * minorStep;
+    const startYminor = Math.floor(minY / minorStep) * minorStep;
+
+    ctx.save();
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    for(let x = startXminor; x <= maxX; x += minorStep){
+      const sx = worldToScreen(x,0).x;
+      ctx.moveTo(sx, 0); ctx.lineTo(sx, H);
+    }
+    for(let y = startYminor; y <= maxY; y += minorStep){
+      const sy = worldToScreen(0,y).y;
+      ctx.moveTo(0, sy); ctx.lineTo(W, sy);
+    }
+    ctx.stroke();
+    ctx.restore();
+
+    const startXmajor = Math.floor(minX / majorStep) * majorStep;
+    const startYmajor = Math.floor(minY / majorStep) * majorStep;
+
+    ctx.save();
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'rgba(255,255,255,0.14)';
+    ctx.beginPath();
+    for(let x = startXmajor; x <= maxX; x += majorStep){
+      const sx = worldToScreen(x,0).x;
+      ctx.moveTo(sx, 0); ctx.lineTo(sx, H);
+    }
+    for(let y = startYmajor; y <= maxY; y += majorStep){
+      const sy = worldToScreen(0,y).y;
+      ctx.moveTo(0, sy); ctx.lineTo(W, sy);
+    }
+    ctx.stroke();
+    ctx.restore();
+
+    // Axes
+    const y0 = worldToScreen(0,0).y;
+    const x0 = worldToScreen(0,0).x;
+
+    ctx.save();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'rgba(255,255,255,0.45)';
+    ctx.beginPath();
+    ctx.moveTo(0, y0); ctx.lineTo(W, y0);
+    ctx.moveTo(x0, 0); ctx.lineTo(x0, H);
+    ctx.stroke();
+    ctx.restore();
+
+    // Labels on axes
+    ctx.save();
+    ctx.fillStyle = 'rgba(233,238,247,0.82)';
+    ctx.font = '12px system-ui, -apple-system, Segoe UI, Roboto, Arial';
+    ctx.textBaseline = 'middle';
+
+    const yLabelStep = majorStep;
+    const startYlab = Math.floor(minY / yLabelStep) * yLabelStep;
+    for(let y = startYlab; y <= maxY; y += yLabelStep){
+      if(Math.abs(y) < 1e-9) continue;
+      const p = worldToScreen(0,y);
+      ctx.strokeStyle = 'rgba(233,238,247,0.45)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(x0 - 6, p.y); ctx.lineTo(x0 + 6, p.y);
+      ctx.stroke();
+      ctx.textAlign = 'left';
+      ctx.fillText(trimNum(y), x0 + 10, p.y);
+    }
+
+    const xLabelStep = majorStep;
+    const startXlab = Math.floor(minX / xLabelStep) * xLabelStep;
+    for(let x = startXlab; x <= maxX; x += xLabelStep){
+      if(Math.abs(x) < 1e-9) continue;
+      const p = worldToScreen(x,0);
+      ctx.strokeStyle = 'rgba(233,238,247,0.45)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(p.x, y0 - 6); ctx.lineTo(p.x, y0 + 6);
+      ctx.stroke();
+      ctx.textAlign = 'center';
+      ctx.fillText(trimNum(x), p.x, y0 + 18);
+    }
+
+    if(x0 > -50 && x0 < W+50 && y0 > -50 && y0 < H+50){
+      ctx.textAlign = 'left';
+      ctx.fillStyle = 'rgba(233,238,247,0.9)';
+      ctx.fillText('0', x0 + 8, y0 + 14);
+    }
+
+    ctx.restore();
+  }
+
+  function applyLineStyle(styleKey){
+    const st = LINE_STYLES[styleKey] || LINE_STYLES.solid;
+    ctx.lineWidth = st.width;
+    ctx.setLineDash(st.dash);
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+  }
+  function drawPoint(f){
+    const {x,y} = f.data;
+    const p = worldToScreen(x,y);
+    ctx.save();
+    ctx.fillStyle = f.color;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 4, 0, Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+  }
+  function drawSegment(f){
+    const {x1,y1,x2,y2} = f.data;
+    const a = worldToScreen(x1,y1);
+    const b = worldToScreen(x2,y2);
+    ctx.save();
+    ctx.strokeStyle = f.color;
+    applyLineStyle(f.style);
+    ctx.beginPath();
+    ctx.moveTo(a.x,a.y);
+    ctx.lineTo(b.x,b.y);
+    ctx.stroke();
+    ctx.restore();
+  }
+  function clipInfiniteLineToView(x1,y1,x2,y2){
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const {minX,maxX,minY,maxY} = worldBounds();
+    const hits = [];
+    function addIfValid(x,y){
+      if (x >= minX-1e-9 && x <= maxX+1e-9 && y >= minY-1e-9 && y <= maxY+1e-9){
+        hits.push({x,y});
+      }
+    }
+    if (Math.abs(dx) > 1e-12){
+      let t = (minX - x1) / dx; addIfValid(minX, y1 + t*dy);
+      t = (maxX - x1) / dx; addIfValid(maxX, y1 + t*dy);
+    }
+    if (Math.abs(dy) > 1e-12){
+      let t = (minY - y1) / dy; addIfValid(x1 + t*dx, minY);
+      t = (maxY - y1) / dy; addIfValid(x1 + t*dx, maxY);
+    }
+    const uniq = [];
+    for(const p of hits){
+      if(!uniq.some(q => Math.hypot(p.x-q.x, p.y-q.y) < 1e-6)) uniq.push(p);
+    }
+    if(uniq.length < 2) return null;
+
+    let bestA = uniq[0], bestB = uniq[1], bestD = -1;
+    for(let i=0;i<uniq.length;i++){
+      for(let j=i+1;j<uniq.length;j++){
+        const d = Math.hypot(uniq[i].x-uniq[j].x, uniq[i].y-uniq[j].y);
+        if(d > bestD){ bestD = d; bestA = uniq[i]; bestB = uniq[j]; }
+      }
+    }
+    return {a:bestA, b:bestB};
+  }
+  function drawInfiniteLine(f){
+    const {x1,y1,x2,y2} = f.data;
+    const clipped = clipInfiniteLineToView(x1,y1,x2,y2);
+    if(!clipped) return;
+    const a = worldToScreen(clipped.a.x, clipped.a.y);
+    const b = worldToScreen(clipped.b.x, clipped.b.y);
+    ctx.save();
+    ctx.strokeStyle = f.color;
+    applyLineStyle(f.style);
+    ctx.beginPath();
+    ctx.moveTo(a.x,a.y);
+    ctx.lineTo(b.x,b.y);
+    ctx.stroke();
+    ctx.restore();
+  }
+  function drawCircle(f){
+    const {x,y,r} = f.data;
+    const c = worldToScreen(x,y);
+    const radiusPx = r * pxPerUnit();
+    ctx.save();
+    ctx.strokeStyle = f.color;
+    applyLineStyle(f.style);
+    ctx.beginPath();
+    ctx.arc(c.x, c.y, Math.abs(radiusPx), 0, Math.PI*2);
+    ctx.stroke();
+    ctx.restore();
+  }
+  function drawFeatures(){
+    for(const f of features){
+      if(!f.visible) continue;
+      if(f.type === 'point') drawPoint(f);
+      else if(f.type === 'between') drawSegment(f);
+      else if(f.type === 'through') drawInfiniteLine(f);
+      else if(f.type === 'circle') drawCircle(f);
+    }
+  }
+
+  function draw(){
+    clearError();
+    drawGrid();
+    drawFeatures();
+    updateZoomReadout();
+  }
+
+  // ----- Pan (drag) -----
+  let isDragging = false;
+  let lastX = 0, lastY = 0;
+
+  canvas.addEventListener('pointerdown', (e) => {
+    // only start if target really is canvas
+    if(e.target !== canvas) return;
+    isDragging = true;
+    lastX = e.clientX;
+    lastY = e.clientY;
+    canvas.setPointerCapture(e.pointerId);
+  });
+
+  canvas.addEventListener('pointermove', (e) => {
+    if(!isDragging) return;
+    const dxPx = e.clientX - lastX;
+    const dyPx = e.clientY - lastY;
+    lastX = e.clientX;
+    lastY = e.clientY;
+
+    const ppu = pxPerUnit();
+    panX -= dxPx / ppu;
+    panY += dyPx / ppu;
+    draw();
+  });
+
+  function endDrag(e){
+    if(!isDragging) return;
+    isDragging = false;
+    try { canvas.releasePointerCapture(e.pointerId); } catch(_){}
+  }
+  canvas.addEventListener('pointerup', endDrag);
+  canvas.addEventListener('pointercancel', endDrag);
+
+  canvas.addEventListener('touchstart', (e) => e.preventDefault(), {passive:false});
+  canvas.addEventListener('touchmove', (e) => e.preventDefault(), {passive:false});
+
+  // ----- Tools UI -----
+  const modeEl = document.getElementById('mode');
+  const fieldsEl = document.getElementById('fields');
+  const submitEl = document.getElementById('submit');
+
+  function makeNum(id, labelText, placeholder=''){
+    const wrap = document.createElement('div');
+    const lab = document.createElement('label');
+    lab.htmlFor = id;
+    lab.textContent = labelText;
+    const inp = document.createElement('input');
+    inp.type = 'number';
+    inp.step = 'any';
+    inp.id = id;
+    inp.placeholder = placeholder;
+    wrap.appendChild(lab);
+    wrap.appendChild(document.createElement('br'));
+    wrap.appendChild(inp);
+    return wrap;
+  }
+  function makeSelect(id, labelText, options){
+    const wrap = document.createElement('div');
+    const lab = document.createElement('label');
+    lab.htmlFor = id;
+    lab.textContent = labelText;
+    const sel = document.createElement('select');
+    sel.id = id;
+    for(const o of options){
+      const opt = document.createElement('option');
+      opt.value = o.value;
+      opt.textContent = o.label;
+      sel.appendChild(opt);
+    }
+    wrap.appendChild(lab);
+    wrap.appendChild(document.createElement('br'));
+    wrap.appendChild(sel);
+    return wrap;
+  }
+
+  function buildFields(){
+    fieldsEl.innerHTML = '';
+    const colorSelect = makeSelect('color', 'Colour', ROYGBIV.map(c => ({value:c.value, label:c.name})));
+    const styleSelect = makeSelect('style', 'Style', [
+      {value:'solid', label:'solid'},
+      {value:'thin', label:'thin'},
+      {value:'dashed', label:'dashed'},
+      {value:'dotted', label:'dotted'},
+    ]);
+
+    const mode = modeEl.value;
+    if(mode === 'point'){
+      fieldsEl.appendChild(makeNum('x', 'x'));
+      fieldsEl.appendChild(makeNum('y', 'y'));
+      fieldsEl.appendChild(colorSelect);
+    } else if(mode === 'between' || mode === 'through'){
+      fieldsEl.appendChild(makeNum('x1', 'x1'));
+      fieldsEl.appendChild(makeNum('y1', 'y1'));
+      fieldsEl.appendChild(makeNum('x2', 'x2'));
+      fieldsEl.appendChild(makeNum('y2', 'y2'));
+      fieldsEl.appendChild(colorSelect);
+      fieldsEl.appendChild(styleSelect);
+    } else if(mode === 'circle'){
+      fieldsEl.appendChild(makeNum('cx', 'x'));
+      fieldsEl.appendChild(makeNum('cy', 'y'));
+      fieldsEl.appendChild(makeNum('r', 'R', 'radius'));
+      fieldsEl.appendChild(colorSelect);
+      fieldsEl.appendChild(styleSelect);
+    }
+  }
+  modeEl.addEventListener('change', buildFields);
+
+  function getVal(id){
+    const el = document.getElementById(id);
+    if(!el) return NaN;
+    return parseFloat(el.value);
+  }
+  function getColor(){
+    const el = document.getElementById('color');
+    return el ? el.value : ROYGBIV[0].value;
+  }
+  function getStyle(){
+    const el = document.getElementById('style');
+    return el ? el.value : 'solid';
+  }
+  function invalidNumber(n){ return Number.isNaN(n) || !Number.isFinite(n); }
+
+  submitEl.addEventListener('click', () => {
+    const mode = modeEl.value;
+
+    if(mode === 'point'){
+      const x = getVal('x'), y = getVal('y');
+      if(invalidNumber(x) || invalidNumber(y)) return;
+      addFeature({ id: nextId(), type: 'point', visible: true, color: getColor(), style: 'solid', data: { x, y } });
+      return;
+    }
+
+    if(mode === 'between' || mode === 'through'){
+      const x1 = getVal('x1'), y1 = getVal('y1'), x2 = getVal('x2'), y2 = getVal('y2');
+      if([x1,y1,x2,y2].some(invalidNumber)) return;
+      if(Math.hypot(x2-x1, y2-y1) < 1e-12) return;
+      addFeature({ id: nextId(), type: mode, visible: true, color: getColor(), style: getStyle(), data: { x1, y1, x2, y2 } });
+      return;
+    }
+
+    if(mode === 'circle'){
+      const x = getVal('cx'), y = getVal('cy'), r = getVal('r');
+      if([x,y,r].some(invalidNumber)) return;
+      addFeature({ id: nextId(), type: 'circle', visible: true, color: getColor(), style: getStyle(), data: { x, y, r } });
+      return;
+    }
+  });
+
+  // Legend
+  const legendList = document.getElementById('legendList');
+  const countEl = document.getElementById('count');
+
+  function describeFeature(f){
+    const cName = (ROYGBIV.find(c => c.value === f.color)?.name) || f.color;
+    if(f.type === 'point'){
+      const {x,y} = f.data;
+      return { name:`Point`, desc:`(${trimNum(x)}, ${trimNum(y)}) · ${cName}` };
+    }
+    if(f.type === 'between'){
+      const {x1,y1,x2,y2} = f.data;
+      return { name:`Line Between`, desc:`(${trimNum(x1)},${trimNum(y1)}) → (${trimNum(x2)},${trimNum(y2)}) · ${cName} · ${f.style}` };
+    }
+    if(f.type === 'through'){
+      const {x1,y1,x2,y2} = f.data;
+      return { name:`Line Through`, desc:`through (${trimNum(x1)},${trimNum(y1)}) & (${trimNum(x2)},${trimNum(y2)}) · ${cName} · ${f.style}` };
+    }
+    if(f.type === 'circle'){
+      const {x,y,r} = f.data;
+      return { name:`Circle`, desc:`centre (${trimNum(x)},${trimNum(y)}) · R=${trimNum(r)} · ${cName} · ${f.style}` };
+    }
+    return { name:`Item`, desc:`#${f.id}` };
+  }
+
+  function renderLegend(){
+    legendList.innerHTML = '';
+    countEl.textContent = `(${features.length})`;
+
+    for(const f of features.slice().reverse()){
+      const item = document.createElement('div');
+      item.className = 'item';
+
+      const sw = document.createElement('div');
+      sw.className = 'swatch';
+      sw.style.background = f.color;
+
+      const meta = document.createElement('div');
+      meta.className = 'meta';
+
+      const {name, desc} = describeFeature(f);
+
+      const title = document.createElement('div');
+      title.className = 'name';
+      title.textContent = `${name} #${f.id}`;
+
+      const description = document.createElement('div');
+      description.className = 'desc';
+      description.textContent = desc;
+
+      meta.appendChild(title);
+      meta.appendChild(description);
+
+      const actions = document.createElement('div');
+      actions.className = 'actions';
+
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = f.visible;
+      cb.title = 'Toggle visibility';
+      cb.addEventListener('change', () => toggleFeature(f.id, cb.checked));
+
+      const del = document.createElement('button');
+      del.className = 'btn-danger';
+      del.textContent = '[x]';
+      del.title = 'Delete';
+      del.addEventListener('click', () => removeFeature(f.id));
+
+      actions.appendChild(cb);
+      actions.appendChild(del);
+
+      item.appendChild(sw);
+      item.appendChild(meta);
+      item.appendChild(actions);
+
+      legendList.appendChild(item);
+    }
+  }
+
+  document.getElementById('clearAll').addEventListener('click', clearAll);
+
+  // Zoom + reset pan
+  const zoomInBtn = document.getElementById('zoomIn');
+  const zoomOutBtn = document.getElementById('zoomOut');
+  const resetBtn = document.getElementById('reset');
+  const zoomReadout = document.getElementById('zoomReadout');
+
+  function setZoom(z){
+    zoom = Math.max(zoomMin, Math.min(zoomMax, z));
+    draw();
+  }
+  function updateZoomReadout(){
+    zoomReadout.textContent = `Zoom: ${zoom.toFixed(2)}× | Center: (${trimNum(panX)}, ${trimNum(panY)})`;
+  }
+
+  zoomInBtn.addEventListener('click', () => setZoom(zoom * 1.25));
+  zoomOutBtn.addEventListener('click', () => setZoom(zoom / 1.25));
+  resetBtn.addEventListener('click', () => { zoom = 1; panX = 0; panY = 0; draw(); });
+
+  // CSV Export/Import
+  const CSV_HEADER = ['id','type','visible','color','style','x','y','x1','y1','x2','y2','r'];
+
+  function csvEscape(value){
+    const s = String(value ?? '');
+    if(/[",\n\r]/.test(s)){
+      return '"' + s.replace(/"/g,'""') + '"';
+    }
+    return s;
+  }
+
+  function featureToRow(f){
+    const row = {
+      id: f.id,
+      type: f.type,
+      visible: f.visible ? '1' : '0',
+      color: f.color || '',
+      style: f.style || '',
+      x:'', y:'', x1:'', y1:'', x2:'', y2:'', r:''
+    };
+    if(f.type === 'point'){ row.x = f.data.x; row.y = f.data.y; }
+    else if(f.type === 'circle'){ row.x = f.data.x; row.y = f.data.y; row.r = f.data.r; }
+    else if(f.type === 'between' || f.type === 'through'){
+      row.x1 = f.data.x1; row.y1 = f.data.y1; row.x2 = f.data.x2; row.y2 = f.data.y2;
+    }
+    return row;
+  }
+
+  function downloadText(filename, text, mime='text/plain'){
+    const blob = new Blob([text], {type:mime});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 500);
+  }
+
+  function exportCSV(){
+    const rows = features.map(featureToRow);
+    const lines = [CSV_HEADER.join(',')];
+    for(const r of rows){
+      lines.push(CSV_HEADER.map(k => csvEscape(r[k])).join(','));
+    }
+    const csv = lines.join('\n');
+    const stamp = new Date().toISOString().slice(0,19).replace(/[:T]/g,'-');
+    downloadText(`grid_drawer_${stamp}.csv`, csv, 'text/csv');
+  }
+
+  function parseCSV(text){
+    const rows = [];
+    let i = 0, field = '', row = [], inQuotes = false;
+    function endField(){ row.push(field); field = ''; }
+    function endRow(){
+      if(row.length === 1 && row[0] === ''){ row = []; return; }
+      rows.push(row);
+      row = [];
+    }
+    while(i < text.length){
+      const ch = text[i];
+      if(inQuotes){
+        if(ch === '"'){
+          if(text[i+1] === '"'){ field += '"'; i += 2; continue; }
+          inQuotes = false; i++; continue;
+        } else { field += ch; i++; continue; }
+      } else {
+        if(ch === '"'){ inQuotes = true; i++; continue; }
+        if(ch === ','){ endField(); i++; continue; }
+        if(ch === '\n'){ endField(); endRow(); i++; continue; }
+        if(ch === '\r'){
+          if(text[i+1] === '\n'){ endField(); endRow(); i += 2; continue; }
+          endField(); endRow(); i++; continue;
+        }
+        field += ch; i++; continue;
+      }
+    }
+    endField();
+    if(row.length) endRow();
+    return rows;
+  }
+
+  function toNum(s){
+    const n = parseFloat(String(s ?? '').trim());
+    return Number.isFinite(n) ? n : NaN;
+  }
+  function normalizeType(t){
+    const s = String(t ?? '').trim().toLowerCase();
+    if(s === 'point') return 'point';
+    if(s === 'between' || s === 'line between' || s === 'line_between') return 'between';
+    if(s === 'through' || s === 'line through' || s === 'line_through') return 'through';
+    if(s === 'circle') return 'circle';
+    return '';
+  }
+
+  function importCSVText(csvText){
+    const rows = parseCSV(csvText);
+    if(!rows.length) throw new Error('CSV appears empty.');
+
+    const header = rows[0].map(h => String(h).trim());
+    const idx = new Map();
+    header.forEach((h, i) => idx.set(h.toLowerCase(), i));
+
+    const looksLikeHeader = idx.has('type') || idx.has('id') || idx.has('x1') || idx.has('r');
+    const rowsToUse = looksLikeHeader ? rows.slice(1) : rows;
+
+    function getCell(r, name){
+      const i = idx.get(name.toLowerCase());
+      return i === undefined ? '' : (r[i] ?? '');
+    }
+
+    features.length = 0;
+    let maxId = 0;
+
+    for(const r of rowsToUse){
+      if(!r || r.length === 0) continue;
+
+      const type = looksLikeHeader ? normalizeType(getCell(r,'type')) : normalizeType(r[1]);
+      if(!type) continue;
+
+      const idRaw = looksLikeHeader ? getCell(r,'id') : r[0];
+      let id = parseInt(String(idRaw).trim(), 10);
+      if(!Number.isFinite(id) || id <= 0) id = nextId();
+
+      const visibleRaw = looksLikeHeader ? getCell(r,'visible') : r[2];
+      const visible = String(visibleRaw).trim() !== '0';
+
+      const color = (looksLikeHeader ? getCell(r,'color') : r[3]) || '#ffffff';
+      const style = (looksLikeHeader ? getCell(r,'style') : r[4]) || 'solid';
+
+      let f = null;
+      if(type === 'point'){
+        const x = toNum(looksLikeHeader ? getCell(r,'x') : r[5]);
+        const y = toNum(looksLikeHeader ? getCell(r,'y') : r[6]);
+        if(Number.isNaN(x) || Number.isNaN(y)) continue;
+        f = { id, type:'point', visible, color, style:'solid', data:{x,y} };
+      } else if(type === 'circle'){
+        const x = toNum(looksLikeHeader ? getCell(r,'x') : r[5]);
+        const y = toNum(looksLikeHeader ? getCell(r,'y') : r[6]);
+        const rr = toNum(looksLikeHeader ? getCell(r,'r') : r[11]);
+        if(Number.isNaN(x) || Number.isNaN(y) || Number.isNaN(rr)) continue;
+        f = { id, type:'circle', visible, color, style, data:{x,y,r:rr} };
+      } else if(type === 'between' || type === 'through'){
+        const x1 = toNum(looksLikeHeader ? getCell(r,'x1') : r[7]);
+        const y1 = toNum(looksLikeHeader ? getCell(r,'y1') : r[8]);
+        const x2 = toNum(looksLikeHeader ? getCell(r,'x2') : r[9]);
+        const y2 = toNum(looksLikeHeader ? getCell(r,'y2') : r[10]);
+        if([x1,y1,x2,y2].some(Number.isNaN)) continue;
+        if(Math.hypot(x2-x1, y2-y1) < 1e-12) continue;
+        f = { id, type, visible, color, style, data:{x1,y1,x2,y2} };
+      }
+
+      if(f){
+        features.push(f);
+        if(id > maxId) maxId = id;
+      }
+    }
+
+    ensureSeqAbove(maxId);
+    renderLegend();
+    draw();
+  }
+
+  document.getElementById('exportCsv').addEventListener('click', () => {
+    try { exportCSV(); }
+    catch(err){ showError('Export failed:\n' + (err?.message || String(err))); }
+  });
+
+  const importBtn = document.getElementById('importCsv');
+  const importFile = document.getElementById('importFile');
+  importBtn.addEventListener('click', () => { importFile.value=''; importFile.click(); });
+  importFile.addEventListener('change', async () => {
+    const file = importFile.files && importFile.files[0];
+    if(!file) return;
+    try{
+      const text = await file.text();
+      importCSVText(text);
+    }catch(err){
+      showError('Import failed:\n' + (err?.message || String(err)));
+    }
+  });
+
+  // Boot
+  buildFields();
+  renderLegend();
+  resize();
+})();
+</script>
+</body>
+</html>
