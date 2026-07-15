@@ -1,789 +1,1301 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Formal Linear Perspective Demo</title>
-  <style>
-    :root {
-      --bg: #0f1115;
-      --panel: #181c23;
-      --text: #e9eef7;
-      --muted: #a6b1c2;
-      --accent: #6dd3ff;
-      --good: #73f59d;
-      --warn: #ffd166;
-      --pink: #ff82c7;
-      --cyan: #77e4ff;
-      --yellow: #ffe57a;
-      --line: rgba(255,255,255,0.12);
-      --shadow: 0 10px 35px rgba(0,0,0,0.35);
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Perspective Cube Lab · Rectilinear and Fisheye</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #0d1016;
+    --panel: #151a23;
+    --panel-2: #0f141c;
+    --text: #eef2f7;
+    --muted: #9aa6b6;
+    --border: #2a3342;
+    --red: #ff4d5a;
+    --green: #49d17d;
+    --blue: #4aa3ff;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: radial-gradient(circle at top, #192131 0, var(--bg) 55%);
+    color: var(--text);
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+
+  .app {
+    width: min(1380px, calc(100% - 28px));
+    margin: 22px auto 40px;
+  }
+
+  h1 {
+    margin: 0 0 6px;
+    font-size: clamp(1.4rem, 3vw, 2.25rem);
+    letter-spacing: -0.03em;
+  }
+
+  .intro {
+    margin: 0 0 18px;
+    color: var(--muted);
+    line-height: 1.45;
+  }
+
+  .workspace {
+    display: grid;
+    grid-template-columns: minmax(0, 760px) minmax(280px, 360px);
+    justify-content: center;
+    align-items: start;
+    gap: 18px;
+  }
+
+  .stage-wrap {
+    display: grid;
+    justify-items: stretch;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  .canvas-shell {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    background: #080b10;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 18px 60px rgba(0,0,0,.34);
+  }
+
+  canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    touch-action: none;
+    cursor: grab;
+  }
+
+  canvas.dragging {
+    cursor: grabbing;
+  }
+
+  .vp-readout {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .vp {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: .88rem;
+    line-height: 1.35;
+    min-width: 0;
+  }
+
+  .vp strong {
+    display: block;
+    margin-bottom: 3px;
+  }
+
+  .vp.red strong { color: var(--red); }
+  .vp.green strong { color: var(--green); }
+  .vp.blue strong { color: var(--blue); }
+
+  .controls {
+    display: grid;
+    gap: 16px;
+    min-width: 0;
+  }
+
+  .control-group {
+    display: grid;
+    gap: 4px;
+    padding: 10px;
+    background: linear-gradient(180deg, var(--panel), var(--panel-2));
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    box-shadow: 0 18px 60px rgba(0,0,0,.22);
+  }
+
+  .control-group + .control-group {
+    margin-top: 4px;
+  }
+
+  .control-group-title {
+    margin: 2px 4px 8px;
+    color: var(--muted);
+    font-size: .76rem;
+    font-weight: 750;
+    letter-spacing: .09em;
+    text-transform: uppercase;
+  }
+
+  .control {
+    padding: 10px 8px 11px;
+    border-bottom: 1px solid rgba(255,255,255,.075);
+  }
+
+  .control:last-child {
+    border-bottom: 0;
+  }
+
+  .control-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+
+  label {
+    font-weight: 650;
+    font-size: .92rem;
+  }
+
+  output {
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  input[type="range"] {
+    width: 100%;
+    accent-color: #dce6f4;
+  }
+
+  input[type="range"]:disabled {
+    opacity: .42;
+    cursor: not-allowed;
+  }
+
+  .toggle-control {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding-top: 13px;
+    padding-bottom: 13px;
+  }
+
+  .toggle-control label {
+    line-height: 1.3;
+  }
+
+  input[type="checkbox"] {
+    width: 1.15rem;
+    height: 1.15rem;
+    flex: 0 0 auto;
+    accent-color: #dce6f4;
+  }
+
+  .legend {
+    margin-top: 14px;
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    color: var(--muted);
+    font-size: .86rem;
+  }
+
+  .legend span::before {
+    content: "";
+    width: .75em;
+    height: .75em;
+    margin-right: .42em;
+    border-radius: 50%;
+    display: inline-block;
+    background: currentColor;
+    vertical-align: -0.03em;
+  }
+
+  .legend .red { color: var(--red); }
+  .legend .green { color: var(--green); }
+  .legend .blue { color: var(--blue); }
+
+  .footer-note {
+    margin-top: 10px;
+    color: #7d8998;
+    font-size: .8rem;
+  }
+
+  @media (max-width: 980px) {
+    .workspace {
+      grid-template-columns: 1fr;
     }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: radial-gradient(circle at top, #1c2230 0%, #0f1115 45%, #0a0c10 100%);
-      color: var(--text);
-    }
-    .app {
-      max-width: 1560px;
-      margin: 0 auto;
-      padding: 20px;
-      display: grid;
-      grid-template-columns: 380px 1fr;
-      gap: 18px;
-      min-height: 100vh;
-    }
-    .panel, .stage {
-      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015));
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 18px;
-      box-shadow: var(--shadow);
-      backdrop-filter: blur(8px);
-    }
+
     .controls {
-      padding: 18px;
-      position: sticky;
-      top: 18px;
-      height: calc(100vh - 36px);
-      overflow: auto;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
-    h1 {
-      margin: 0 0 6px;
-      font-size: 1.35rem;
-      line-height: 1.15;
-    }
-    .sub {
-      color: var(--muted);
-      font-size: 0.95rem;
-      line-height: 1.45;
-      margin-bottom: 14px;
-    }
-    .toolbar {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin: 12px 0 18px;
-    }
-    button {
-      border: 1px solid rgba(255,255,255,0.12);
-      background: linear-gradient(180deg, rgba(255,255,255,0.07), rgba(255,255,255,0.03));
-      color: var(--text);
-      border-radius: 12px;
-      padding: 9px 12px;
-      font: inherit;
-      cursor: pointer;
-      transition: transform 120ms ease, border-color 120ms ease, background 120ms ease;
-    }
-    button:hover {
-      transform: translateY(-1px);
-      border-color: rgba(255,255,255,0.22);
-      background: linear-gradient(180deg, rgba(255,255,255,0.1), rgba(255,255,255,0.04));
-    }
-    button.active {
-      border-color: rgba(109, 211, 255, 0.7);
-      box-shadow: 0 0 0 1px rgba(109, 211, 255, 0.18) inset;
-    }
-    .group {
-      margin: 16px 0;
-      padding-top: 14px;
-      border-top: 1px solid var(--line);
-    }
-    .group h2 {
-      font-size: 0.95rem;
-      font-weight: 700;
-      letter-spacing: 0.01em;
-      margin: 0 0 10px;
-    }
-    .row {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 10px;
-      align-items: center;
-      margin: 10px 0 6px;
-      font-size: 0.93rem;
-    }
-    .row small {
-      color: var(--muted);
-      font-variant-numeric: tabular-nums;
-    }
-    input[type="range"] {
-      width: 100%;
-      accent-color: #87d8ff;
-    }
-    .checks {
-      display: grid;
-      gap: 8px;
-      margin-top: 10px;
-    }
-    label.check {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      color: var(--muted);
-      font-size: 0.92rem;
-    }
-    .right { min-width: 0; }
-    .stage {
-      padding: 14px;
-      display: grid;
-      grid-template-rows: auto 1fr;
-      min-height: calc(100vh - 40px);
-    }
-    .stage-head {
-      display: flex;
-      justify-content: space-between;
-      align-items: start;
-      gap: 16px;
-      margin-bottom: 10px;
-    }
-    .stage-title {
-      font-size: 1rem;
-      font-weight: 700;
-      margin-bottom: 4px;
-    }
-    .badge-wrap {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      justify-content: flex-end;
-    }
-    .badge {
-      padding: 7px 10px;
-      border-radius: 999px;
-      border: 1px solid rgba(255,255,255,0.1);
-      background: rgba(255,255,255,0.04);
-      color: var(--muted);
-      font-size: 0.84rem;
-      white-space: nowrap;
-    }
-    .canvas-wrap {
-      min-height: 0;
-      position: relative;
-      border-radius: 14px;
-      overflow: hidden;
-      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)), #0c1017;
-      border: 1px solid rgba(255,255,255,0.06);
-      cursor: grab;
-    }
-    .canvas-wrap.dragging { cursor: grabbing; }
-    canvas {
-      width: 100%;
-      height: 100%;
-      display: block;
-    }
-    .hint {
-      position: absolute;
-      right: 12px;
-      bottom: 12px;
-      font-size: 12px;
-      color: rgba(255,255,255,0.72);
-      background: rgba(0,0,0,0.35);
-      border: 1px solid rgba(255,255,255,0.08);
-      padding: 8px 10px;
-      border-radius: 10px;
-      pointer-events: none;
-      backdrop-filter: blur(6px);
-    }
-    code {
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      color: #d3ebff;
-      background: rgba(255,255,255,0.05);
-      padding: 0.12rem 0.35rem;
-      border-radius: 6px;
-    }
-    @media (max-width: 1180px) {
-      .app { grid-template-columns: 1fr; }
-      .controls { position: static; height: auto; }
-      .stage { min-height: 70vh; }
-    }
-  </style>
+  }
+
+  @media (max-width: 720px) {
+    .controls { grid-template-columns: 1fr; }
+    .vp-readout { grid-template-columns: 1fr; }
+  }
+</style>
 </head>
 <body>
-  <div class="app">
-    <section class="panel controls">
-      <h1>Formal Linear Perspective</h1>
-      <div class="sub">Interactive demo of center of vision, eye line, horizon line, station point, cone of vision, one-point, two-point, three-point, incline, decline, and auxiliary tilt. One page. Fewer excuses.</div>
+<main class="app">
+  <h1>Perspective Cube Lab</h1>
+  <p class="intro">A 1 × 1 × 1 wireframe cube with rectilinear three-point and optional 180° five/six-point fisheye projection.</p>
 
-      <div class="toolbar" id="presetBar">
-        <button data-preset="one">One-point</button>
-        <button data-preset="two">Two-point</button>
-        <button data-preset="bird">3-point bird</button>
-        <button data-preset="worm">3-point worm</button>
-        <button data-preset="incline">Incline</button>
-        <button data-preset="decline">Decline</button>
-        <button data-preset="aux">Auxiliary</button>
-        <button id="resetBtn">Reset</button>
+  <div class="workspace">
+    <section class="stage-wrap">
+      <div class="canvas-shell">
+        <canvas id="view" aria-label="Interactive three-point perspective cube"></canvas>
       </div>
 
-      <div class="group">
-        <h2>Viewer and picture plane</h2>
-        <div class="row"><label for="stationDistance">Station distance / focal length</label><small id="stationDistanceVal"></small></div>
-        <input id="stationDistance" type="range" min="0.6" max="4.5" step="0.01" />
-
-        <div class="row"><label for="coneAngle">Cone of vision</label><small id="coneAngleVal"></small></div>
-        <input id="coneAngle" type="range" min="20" max="120" step="1" />
-
-        <div class="row"><label for="pitch">Head tilt</label><small id="pitchVal"></small></div>
-        <input id="pitch" type="range" min="-80" max="80" step="0.1" />
-
-        <div class="row"><label for="eyeHeight">Eye height</label><small id="eyeHeightVal"></small></div>
-        <input id="eyeHeight" type="range" min="0.5" max="8" step="0.01" />
-      </div>
-
-      <div class="group">
-        <h2>Rotation and rule changes</h2>
-        <div class="row"><label for="yaw">Yaw</label><small id="yawVal"></small></div>
-        <input id="yaw" type="range" min="-89" max="89" step="0.1" />
-
-        <div class="row"><label for="tiltX">Incline / decline tilt</label><small id="tiltXVal"></small></div>
-        <input id="tiltX" type="range" min="-80" max="80" step="0.1" />
-
-        <div class="row"><label for="tiltZ">Auxiliary roll</label><small id="tiltZVal"></small></div>
-        <input id="tiltZ" type="range" min="-80" max="80" step="0.1" />
-      </div>
-
-      <div class="group">
-        <h2>Object</h2>
-        <div class="row"><label for="boxX">Horizontal offset</label><small id="boxXVal"></small></div>
-        <input id="boxX" type="range" min="-8" max="8" step="0.01" />
-
-        <div class="row"><label for="boxZ">Depth position</label><small id="boxZVal"></small></div>
-        <input id="boxZ" type="range" min="3" max="32" step="0.01" />
-
-        <div class="row"><label for="boxLift">Lift above ground</label><small id="boxLiftVal"></small></div>
-        <input id="boxLift" type="range" min="0" max="10" step="0.01" />
-
-        <div class="row"><label for="cubeSize">Cube side length</label><small id="cubeSizeVal"></small></div>
-        <input id="cubeSize" type="range" min="0.5" max="8" step="0.01" />
-      </div>
-
-      <div class="group">
-        <h2>Display</h2>
-        <div class="checks">
-          <label class="check"><input type="checkbox" id="showGrid" checked /> Show ground grid</label>
-          <label class="check"><input type="checkbox" id="showCone" checked /> Show cone of vision</label>
-          <label class="check"><input type="checkbox" id="showGuides" checked /> Show construction guides</label>
-          <label class="check"><input type="checkbox" id="showLabels" checked /> Show labels</label>
-          <label class="check"><input type="checkbox" id="fillBox" checked /> Fill visible faces</label>
-          <label class="check"><input type="checkbox" id="ghostBox" checked /> Ghost hidden edges</label>
+      <div class="vp-readout" aria-live="polite">
+        <div class="vp red">
+          <strong>Red vanishing point · local X</strong>
+          <span id="vpX">—</span>
+        </div>
+        <div class="vp green">
+          <strong>Green vanishing point · local Y</strong>
+          <span id="vpY">—</span>
+        </div>
+        <div class="vp blue">
+          <strong>Blue vanishing point · local Z</strong>
+          <span id="vpZ">—</span>
         </div>
       </div>
     </section>
 
-    <section class="right">
-      <section class="stage">
-        <div class="stage-head">
-          <div><div class="stage-title">Picture plane</div></div>
-          <div class="badge-wrap"><div class="badge" id="perspectiveBadge"></div></div>
+    <aside class="controls" aria-label="Perspective controls">
+      <section class="control-group" aria-labelledby="cubeControlsTitle">
+        <h2 class="control-group-title" id="cubeControlsTitle">Cube controls</h2>
+
+        <div class="control">
+          <div class="control-row">
+            <label for="cubeSize">Cube size</label>
+            <output id="cubeSizeOut"></output>
+          </div>
+          <input id="cubeSize" type="range" min="0.25" max="3" step="0.05" value="1" data-default="1">
         </div>
-        <div class="canvas-wrap" id="canvasWrap">
-          <canvas id="mainCanvas"></canvas>
-          <div class="hint">Drag to pan · Scroll to zoom · Double-click a slider to reset it</div>
+
+        <div class="control">
+          <div class="control-row">
+            <label for="cubeY">Move cube up / down</label>
+            <output id="cubeYOut"></output>
+          </div>
+          <input id="cubeY" type="range" min="-3" max="3" step="0.05" value="0" data-default="0">
+        </div>
+
+        <div class="control">
+          <div class="control-row">
+            <label for="cubeDepth">Move cube closer / farther</label>
+            <output id="cubeDepthOut"></output>
+          </div>
+          <input id="cubeDepth" type="range" min="-4" max="4" step="0.05" value="0" data-default="0">
+        </div>
+
+        <div class="control">
+          <div class="control-row">
+            <label for="yaw">Cube yaw</label>
+            <output id="yawOut"></output>
+          </div>
+          <input id="yaw" type="range" min="-45" max="45" step="1" value="0" data-default="0">
+        </div>
+
+        <div class="control">
+          <div class="control-row">
+            <label for="roll">Cube roll</label>
+            <output id="rollOut"></output>
+          </div>
+          <input id="roll" type="range" min="-45" max="45" step="1" value="0" data-default="0">
+        </div>
+
+        <div class="control">
+          <div class="control-row">
+            <label for="pitch">Cube pitch</label>
+            <output id="pitchOut"></output>
+          </div>
+          <input id="pitch" type="range" min="-45" max="45" step="1" value="0" data-default="0">
         </div>
       </section>
-    </section>
+
+      <section class="control-group" aria-labelledby="cameraControlsTitle">
+        <h2 class="control-group-title" id="cameraControlsTitle">Camera controls</h2>
+
+        <div class="control">
+          <div class="control-row">
+            <label for="fov">Field of view · size compensated</label>
+            <output id="fovOut"></output>
+          </div>
+          <input id="fov" type="range" min="25" max="100" step="1" value="52" data-default="52">
+        </div>
+
+        <div class="control">
+          <div class="control-row">
+            <label for="cameraHeight">Camera height</label>
+            <output id="cameraHeightOut"></output>
+          </div>
+          <input id="cameraHeight" type="range" min="-4" max="4" step="0.05" value="0" data-default="0">
+        </div>
+
+        <div class="control">
+          <div class="control-row">
+            <label for="cameraPitch">Camera pitch</label>
+            <output id="cameraPitchOut"></output>
+          </div>
+          <input id="cameraPitch" type="range" min="-45" max="45" step="1" value="0" data-default="0">
+        </div>
+
+        <div class="control toggle-control">
+          <label for="fisheye">5/6-point fisheye · 180°</label>
+          <input id="fisheye" type="checkbox" data-default="false">
+        </div>
+      </section>
+    </aside>
   </div>
 
-  <script>
-    const state = {
-      stationDistance: 2.0,
-      coneAngle: 60,
-      pitch: 0,
-      eyeHeight: 1.6,
-      boxX: 0,
-      boxZ: 10,
-      boxLift: 0.1,
-      cubeSize: 3,
-      boxW: 3,
-      boxH: 3,
-      boxD: 3,
-      yaw: 0,
-      tiltX: 0,
-      tiltZ: 0,
-      showGrid: true,
-      showCone: true,
-      showGuides: true,
-      showLabels: true,
-      fillBox: true,
-      ghostBox: true,
-      panX: 0,
-      panY: 0,
-      viewZoom: 1,
-      preset: 'one'
+  <div class="legend">
+    <span class="red">Local X edges</span>
+    <span class="green">Local Y edges</span>
+    <span class="blue">Local Z edges</span>
+  </div>
+  <div class="footer-note">Vanishing-point coordinates are reported in canvas pixels from the top-left corner. The default cube centre is (0, 0, 0), size is 1, yaw is 0°, roll is 0°, cube pitch is 0°, and camera pitch is 0°. Moving the cube vertically no longer changes the horizon. Camera pitch controls the horizon height and creates the vertical vanishing point; camera height moves the eye without tilting it. Double-click any slider to reset it. Field-of-view changes are distance-compensated so the cube remains approximately the same size on screen. Drag empty canvas space to pan, use the mouse wheel to zoom about world origin (0, 0), double-click the canvas to return the origin to centre, and drag a cube edge to rotate using the most screen-normal available yaw, roll, or pitch axis. Construction lines now stop at a visible vanishing point instead of running past it. Enable 5/6-point fisheye for a 180° circular projection with curved lines and separate positive and negative axis vanishing points.</div>
+</main>
+
+<script>
+(() => {
+  "use strict";
+
+  const canvas = document.getElementById("view");
+  const ctx = canvas.getContext("2d");
+
+  const controls = {
+    cubeSize: document.getElementById("cubeSize"),
+    cubeY: document.getElementById("cubeY"),
+    cubeDepth: document.getElementById("cubeDepth"),
+    yaw: document.getElementById("yaw"),
+    roll: document.getElementById("roll"),
+    pitch: document.getElementById("pitch"),
+    fov: document.getElementById("fov"),
+    cameraHeight: document.getElementById("cameraHeight"),
+    cameraPitch: document.getElementById("cameraPitch"),
+    fisheye: document.getElementById("fisheye")
+  };
+
+  const outputs = {
+    cubeSize: document.getElementById("cubeSizeOut"),
+    cubeY: document.getElementById("cubeYOut"),
+    cubeDepth: document.getElementById("cubeDepthOut"),
+    yaw: document.getElementById("yawOut"),
+    roll: document.getElementById("rollOut"),
+    pitch: document.getElementById("pitchOut"),
+    fov: document.getElementById("fovOut"),
+    cameraHeight: document.getElementById("cameraHeightOut"),
+    cameraPitch: document.getElementById("cameraPitchOut"),
+    vpX: document.getElementById("vpX"),
+    vpY: document.getElementById("vpY"),
+    vpZ: document.getElementById("vpZ")
+  };
+
+  const COLORS = {
+    x: "#ff4d5a",
+    y: "#49d17d",
+    z: "#4aa3ff",
+    grid: "rgba(210,220,235,.18)",
+    gridMajor: "rgba(235,240,247,.38)",
+    horizon: "rgba(255,255,255,.64)",
+    plane: "rgba(180,195,215,.07)"
+  };
+
+  const EPS = 1e-7;
+  const deg = a => a * Math.PI / 180;
+
+  const viewState = {
+    panX: 0,
+    panY: 0,
+    zoom: 1,
+    dragging: false,
+    dragMode: null,
+    lastX: 0,
+    lastY: 0,
+    startX: 0,
+    startY: 0,
+    startYaw: 0,
+    startRoll: 0,
+    startPitch: 0,
+    rotateControl: null,
+    rotateNormalX: 0,
+    rotateNormalY: 0,
+    latestProjected: null,
+    latestEdges: null,
+    latestEdgePaths: null,
+    latestState: null,
+    latestCamera: null
+  };
+
+  const V = {
+    add: (a,b) => ({x:a.x+b.x,y:a.y+b.y,z:a.z+b.z}),
+    sub: (a,b) => ({x:a.x-b.x,y:a.y-b.y,z:a.z-b.z}),
+    scale: (a,s) => ({x:a.x*s,y:a.y*s,z:a.z*s}),
+    dot: (a,b) => a.x*b.x+a.y*b.y+a.z*b.z,
+    cross: (a,b) => ({
+      x:a.y*b.z-a.z*b.y,
+      y:a.z*b.x-a.x*b.z,
+      z:a.x*b.y-a.y*b.x
+    }),
+    len: a => Math.hypot(a.x,a.y,a.z),
+    norm: a => {
+      const l = Math.hypot(a.x,a.y,a.z) || 1;
+      return {x:a.x/l,y:a.y/l,z:a.z/l};
+    }
+  };
+
+  function rotateYawRollPitch(p, yaw, roll, pitch) {
+    const cy = Math.cos(yaw), sy = Math.sin(yaw);
+    const cr = Math.cos(roll), sr = Math.sin(roll);
+    const cp = Math.cos(pitch), sp = Math.sin(pitch);
+
+    const yawed = {
+      x: cy*p.x + sy*p.z,
+      y: p.y,
+      z: -sy*p.x + cy*p.z
     };
 
-    const defaultState = {
-      stationDistance: 2.0,
-      coneAngle: 60,
-      pitch: 0,
-      eyeHeight: 1.6,
-      boxX: 0,
-      boxZ: 10,
-      boxLift: 0.1,
-      cubeSize: 3.0,
-      boxW: 3.0,
-      boxH: 3.0,
-      boxD: 3.0,
-      yaw: 0,
-      tiltX: 0,
-      tiltZ: 0,
-      panX: 0,
-      panY: 0,
-      viewZoom: 1
+    const rolled = {
+      x: cr*yawed.x - sr*yawed.y,
+      y: sr*yawed.x + cr*yawed.y,
+      z: yawed.z
     };
 
-    const sliders = ['stationDistance','coneAngle','pitch','eyeHeight','yaw','tiltX','tiltZ','boxX','boxZ','boxLift','cubeSize'];
-    const checks = ['showGrid','showCone','showGuides','showLabels','fillBox','ghostBox'];
+    return {
+      x: rolled.x,
+      y: cp*rolled.y - sp*rolled.z,
+      z: sp*rolled.y + cp*rolled.z
+    };
+  }
 
-    const mainCanvas = document.getElementById('mainCanvas');
-    const canvasWrap = document.getElementById('canvasWrap');
-    const perspectiveBadge = document.getElementById('perspectiveBadge');
-    const presetBar = document.getElementById('presetBar');
+  function setupCamera(state, w, h) {
+    // Camera position, cube position and camera orientation are independent.
+    // This keeps the horizon fixed when the cube moves up or down.
+    const baseFov = 52;
+    const baseDistance = 8;
+    const focal = (h * 0.5) / Math.tan(deg(state.fov) * 0.5);
+    const baseFocal = (h * 0.5) / Math.tan(deg(baseFov) * 0.5);
+    const compensatedDistance = state.fisheye
+      ? 6
+      : baseDistance * (focal / baseFocal);
 
-    function deg(v){ return v * Math.PI / 180; }
-    function clamp(v, lo, hi){ return Math.max(lo, Math.min(hi, v)); }
-    function fmt(v, digits=2){ return Number(v).toFixed(digits).replace(/\.00$/,''); }
-    function near(v, e=0.15){ return Math.abs(v) < e; }
+    const position = {
+      x: 0,
+      y: state.cameraHeight,
+      z: compensatedDistance
+    };
 
-    function rotX(a){ const c = Math.cos(a), s = Math.sin(a); return [[1,0,0],[0,c,-s],[0,s,c]]; }
-    function rotY(a){ const c = Math.cos(a), s = Math.sin(a); return [[c,0,s],[0,1,0],[-s,0,c]]; }
-    function rotZ(a){ const c = Math.cos(a), s = Math.sin(a); return [[c,-s,0],[s,c,0],[0,0,1]]; }
-    function matMul(A,B){
-      const out = Array.from({length:3},()=>[0,0,0]);
-      for(let r=0;r<3;r++) for(let c=0;c<3;c++) out[r][c] = A[r][0]*B[0][c] + A[r][1]*B[1][c] + A[r][2]*B[2][c];
-      return out;
-    }
-    function matVec(M,v){
+    // Positive pitch looks upward; negative pitch looks downward.
+    const cameraPitch = deg(state.cameraPitch);
+    const forward = {
+      x: 0,
+      y: Math.sin(cameraPitch),
+      z: -Math.cos(cameraPitch)
+    };
+    const right = {x:1,y:0,z:0};
+    const up = V.norm(V.cross(right, forward));
+
+    return {
+      position,
+      forward,
+      right,
+      up,
+      focal: focal * viewState.zoom,
+      cx: w/2 + viewState.panX,
+      cy: h/2 + viewState.panY,
+      fisheye: state.fisheye,
+      fisheyeRadius: Math.min(w,h) * 0.47 * viewState.zoom,
+      fisheyeHalfFov: Math.PI * 0.5
+    };
+  }
+
+  function worldToCamera(p, cam) {
+    const d = V.sub(p, cam.position);
+    return {
+      x: V.dot(d, cam.right),
+      y: V.dot(d, cam.up),
+      z: V.dot(d, cam.forward)
+    };
+  }
+
+  function projectCameraVector(c, cam) {
+    if (!cam.fisheye) {
+      if (c.z <= 0.03) return null;
       return {
-        x: M[0][0]*v.x + M[0][1]*v.y + M[0][2]*v.z,
-        y: M[1][0]*v.x + M[1][1]*v.y + M[1][2]*v.z,
-        z: M[2][0]*v.x + M[2][1]*v.y + M[2][2]*v.z,
+        x: cam.cx + cam.focal * c.x / c.z,
+        y: cam.cy - cam.focal * c.y / c.z,
+        depth: c.z
       };
     }
-    function add(a,b){ return {x:a.x+b.x, y:a.y+b.y, z:a.z+b.z}; }
-    function sub(a,b){ return {x:a.x-b.x, y:a.y-b.y, z:a.z-b.z}; }
-    function scale(a,s){ return {x:a.x*s, y:a.y*s, z:a.z*s}; }
-    function len(v){ return Math.hypot(v.x, v.y, v.z); }
-    function norm(v){ const l=len(v)||1; return scale(v,1/l); }
 
-    function resizeCanvasToDisplaySize(canvas){
-      const dpr = window.devicePixelRatio || 1;
-      const rect = canvas.getBoundingClientRect();
-      const widthCss = rect.width || 300;
-      const heightCss = rect.height || 300;
-      const w = Math.max(1, Math.round(widthCss * dpr));
-      const h = Math.max(1, Math.round(heightCss * dpr));
-      if(canvas.width !== w || canvas.height !== h){ canvas.width = w; canvas.height = h; }
-      const ctx = canvas.getContext('2d');
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      return {ctx, width: widthCss, height: heightCss};
+    const length = Math.hypot(c.x,c.y,c.z);
+    if (length < EPS) return null;
+
+    const theta = Math.acos(Math.max(-1,Math.min(1,c.z/length)));
+    if (theta > cam.fisheyeHalfFov + 1e-6) return null;
+
+    const transverse = Math.hypot(c.x,c.y);
+    const radius = cam.fisheyeRadius * theta / cam.fisheyeHalfFov;
+
+    if (transverse < EPS) {
+      return {x:cam.cx,y:cam.cy,depth:length,theta};
     }
 
-    function getScene(){
-      const f = state.stationDistance;
-      const cone = deg(state.coneAngle);
-      const projF = f * Math.tan(Math.PI/6) / Math.max(1e-4, Math.tan(cone/2));
-      const baseProjF = f;
-      const pitch = deg(state.pitch);
-      const baseEye = {x:0, y:state.eyeHeight, z:0};
+    return {
+      x: cam.cx + radius * c.x / transverse,
+      y: cam.cy - radius * c.y / transverse,
+      depth: length,
+      theta
+    };
+  }
 
-      const cameraToWorld = rotX(-pitch);
-      const worldToCamera = rotX(pitch);
-      const forwardWorld = matVec(cameraToWorld, {x:0,y:0,z:1});
-      const objectRot = matMul(rotY(deg(state.yaw)), matMul(rotX(deg(state.tiltX)), rotZ(deg(state.tiltZ))));
-      const center = {x:state.boxX, y:state.boxLift + state.boxH/2, z:state.boxZ};
-      const centerCamBase = matVec(worldToCamera, sub(center, baseEye));
-      const sizeLockRatio = projF / Math.max(1e-4, baseProjF);
-      const desiredCenterDepth = Math.max(0.35, centerCamBase.z * sizeLockRatio);
-      const dollyDelta = centerCamBase.z - desiredCenterDepth;
-      const eye = add(baseEye, scale(forwardWorld, dollyDelta));
+  function projectWorld(p, cam) {
+    return projectCameraVector(worldToCamera(p,cam),cam);
+  }
 
-      const half = {x:state.boxW/2, y:state.boxH/2, z:state.boxD/2};
-      const localCorners = [
-        {x:-half.x,y:-half.y,z:-half.z}, {x: half.x,y:-half.y,z:-half.z},
-        {x: half.x,y: half.y,z:-half.z}, {x:-half.x,y: half.y,z:-half.z},
-        {x:-half.x,y:-half.y,z: half.z}, {x: half.x,y:-half.y,z: half.z},
-        {x: half.x,y: half.y,z: half.z}, {x:-half.x,y: half.y,z: half.z},
-      ];
-      const worldCorners = localCorners.map(c => add(center, matVec(objectRot, c)));
-      const cameraCorners = worldCorners.map(c => matVec(worldToCamera, sub(c, eye)));
+  function projectDirection(dir, cam) {
+    const c = {
+      x: V.dot(dir, cam.right),
+      y: V.dot(dir, cam.up),
+      z: V.dot(dir, cam.forward)
+    };
 
-      const axesWorld = [
-        matVec(objectRot, {x:1,y:0,z:0}),
-        matVec(objectRot, {x:0,y:1,z:0}),
-        matVec(objectRot, {x:0,y:0,z:1}),
-      ];
-      const axesCamera = axesWorld.map(v => matVec(worldToCamera, v));
+    if (cam.fisheye) {
+      const projected = projectCameraVector(c,cam);
+      return projected
+        ? {...projected,finite:true,visible:true}
+        : {finite:true,visible:false};
+    }
 
-      const faces = [
-        {name:'back',  idx:[0,1,2,3], axis:2, sign:-1, fill:'rgba(255,255,255,0.035)'},
-        {name:'front', idx:[4,5,6,7], axis:2, sign:+1, fill:'rgba(255,255,255,0.06)'},
-        {name:'bottom',idx:[0,1,5,4], axis:1, sign:-1, fill:'rgba(255,229,122,0.10)'},
-        {name:'top',   idx:[3,2,6,7], axis:1, sign:+1, fill:'rgba(115,245,157,0.11)'},
-        {name:'right', idx:[1,2,6,5], axis:0, sign:+1, fill:'rgba(255,130,199,0.09)'},
-        {name:'left',  idx:[0,3,7,4], axis:0, sign:-1, fill:'rgba(119,228,255,0.09)'}
-      ];
-      const worldNormals = [axesWorld[0], axesWorld[1], axesWorld[2]];
-      faces.forEach(face => {
-        face.normal = scale(worldNormals[face.axis], face.sign);
-        const camNormal = matVec(worldToCamera, face.normal);
-        face.visible = camNormal.z < 0;
-        face.depth = face.idx.reduce((s,i)=>s+cameraCorners[i].z,0)/face.idx.length;
-      });
-      faces.sort((a,b)=>b.depth-a.depth);
+    if (Math.abs(c.z) < EPS) {
+      return {finite:false,dx:c.x,dy:-c.y,visible:false};
+    }
 
-      const edges = [
-        [0,1],[1,2],[2,3],[3,0],
-        [4,5],[5,6],[6,7],[7,4],
-        [0,4],[1,5],[2,6],[3,7],
-      ];
+    return {
+      finite:true,
+      visible:true,
+      x: cam.cx + cam.focal * c.x / c.z,
+      y: cam.cy - cam.focal * c.y / c.z
+    };
+  }
 
-      function project(cam, W, H){
-        if(cam.z <= 0.04) return null;
-        const scalePx = Math.min(W,H) * 0.31 * state.viewZoom;
-        return {
-          x: W/2 + state.panX + (projF * cam.x / cam.z) * scalePx,
-          y: H/2 + state.panY - (projF * cam.y / cam.z) * scalePx,
-          z: cam.z
-        };
+  function projectAxisVanishing(dir, cam) {
+    const positive = projectDirection(dir,cam);
+    if (!cam.fisheye) return {positive,negative:positive};
+    return {
+      positive,
+      negative: projectDirection(V.scale(dir,-1),cam)
+    };
+  }
+
+  function clipInfiniteLineToRect(a, b, w, h) {
+    const dx = b.x - a.x, dy = b.y - a.y;
+    const pts = [];
+
+    function pushIf(t, x, y) {
+      if (x >= -0.5 && x <= w+0.5 && y >= -0.5 && y <= h+0.5) {
+        if (!pts.some(p => Math.hypot(p.x-x,p.y-y)<0.5)) pts.push({x,y,t});
       }
+    }
 
-      const horizonYNorm = projF * Math.tan(-pitch);
-      const leftDirWorld = norm({x:forwardWorld.z, y:0, z:-forwardWorld.x});
-      const rightDirWorld = scale(leftDirWorld,-1);
+    if (Math.abs(dx) > EPS) {
+      let t = (0 - a.x)/dx; pushIf(t, 0, a.y+t*dy);
+      t = (w - a.x)/dx; pushIf(t, w, a.y+t*dy);
+    }
+    if (Math.abs(dy) > EPS) {
+      let t = (0 - a.y)/dy; pushIf(t, a.x+t*dx, 0);
+      t = (h - a.y)/dy; pushIf(t, a.x+t*dx, h);
+    }
 
-      function vpFromDirection(dirCam, W, H){
-        const scalePx = Math.min(W,H) * 0.31 * state.viewZoom;
-        if(Math.abs(dirCam.z) < 1e-5){
-          const big = 1e6;
-          return {x: W/2 + state.panX + Math.sign(dirCam.x||1)*big, y: H/2 + state.panY - Math.sign(dirCam.y||1)*big, finite:false};
+    if (pts.length < 2) return null;
+    pts.sort((p,q) => p.t-q.t);
+    return [pts[0], pts[pts.length-1]];
+  }
+
+  function drawSegment(a, b, style, width=1, dash=[]) {
+    if (!a || !b) return;
+    ctx.save();
+    ctx.strokeStyle = style;
+    ctx.lineWidth = width;
+    ctx.setLineDash(dash);
+    ctx.beginPath();
+    ctx.moveTo(a.x,a.y);
+    ctx.lineTo(b.x,b.y);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawPolyline(points, style, width=1, dash=[], close=false, fill=null) {
+    if (!points || points.length < 2) return;
+    ctx.save();
+    ctx.strokeStyle = style;
+    ctx.lineWidth = width;
+    ctx.setLineDash(dash);
+    if (fill) ctx.fillStyle = fill;
+    ctx.beginPath();
+    ctx.moveTo(points[0].x,points[0].y);
+    for (let i=1; i<points.length; i++) ctx.lineTo(points[i].x,points[i].y);
+    if (close) ctx.closePath();
+    if (fill) ctx.fill();
+    if (style) ctx.stroke();
+    ctx.restore();
+  }
+
+  function sampleWorldSegment(a, b, cam, steps=32) {
+    const runs = [];
+    let run = [];
+    for (let i=0; i<=steps; i++) {
+      const t = i/steps;
+      const world = {
+        x:a.x+(b.x-a.x)*t,
+        y:a.y+(b.y-a.y)*t,
+        z:a.z+(b.z-a.z)*t
+      };
+      const p = projectWorld(world,cam);
+      if (p) {
+        run.push(p);
+      } else if (run.length) {
+        runs.push(run);
+        run = [];
+      }
+    }
+    if (run.length) runs.push(run);
+    return runs;
+  }
+
+  function drawWorldSegment(a, b, cam, style, width=1, dash=[], steps=32) {
+    if (!cam.fisheye) {
+      drawSegment(projectWorld(a,cam),projectWorld(b,cam),style,width,dash);
+      return;
+    }
+    for (const run of sampleWorldSegment(a,b,cam,steps)) {
+      drawPolyline(run,style,width,dash);
+    }
+  }
+
+  function drawFrameGrid(w, h) {
+    ctx.save();
+    ctx.strokeStyle = "rgba(220,230,242,.08)";
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= 10; i++) {
+      const x = (i / 10) * w;
+      const y = (i / 10) * h;
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, h);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(w, y);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawGroundPlane(cam) {
+    const corners = [
+      {x:-5,y:0,z:-5},
+      {x: 5,y:0,z:-5},
+      {x: 5,y:0,z: 5},
+      {x:-5,y:0,z: 5}
+    ];
+
+    if (!cam.fisheye) {
+      const pts = corners.map(p => projectWorld(p,cam));
+      if (pts.some(p => !p)) return;
+      drawPolyline(pts,"transparent",0,[],true,COLORS.plane);
+      return;
+    }
+
+    const perimeter = [];
+    for (let edge=0; edge<4; edge++) {
+      const a = corners[edge];
+      const b = corners[(edge+1)%4];
+      const runs = sampleWorldSegment(a,b,cam,32);
+      if (runs.length !== 1) return;
+      perimeter.push(...runs[0].slice(edge ? 1 : 0));
+    }
+    if (perimeter.length > 3) drawPolyline(perimeter,"transparent",0,[],true,COLORS.plane);
+  }
+
+  function drawGroundGrid(cam, w, h) {
+    for (let i=-5; i<=5; i++) {
+      const major = i === 0;
+      const color = major ? COLORS.gridMajor : COLORS.grid;
+      const width = major ? 1.4 : 1;
+
+      drawWorldSegment({x:i,y:0,z:-5},{x:i,y:0,z:5},cam,color,width,[],64);
+      drawWorldSegment({x:-5,y:0,z:i},{x:5,y:0,z:i},cam,color,width,[],64);
+    }
+  }
+
+  function drawHorizon(cam, w, h) {
+    if (cam.fisheye) {
+      const runs = [];
+      let run = [];
+      const samples = 360;
+      for (let i=0; i<=samples; i++) {
+        const angle = (i/samples)*Math.PI*2;
+        const p = projectDirection({x:Math.cos(angle),y:0,z:Math.sin(angle)},cam);
+        if (p.visible) {
+          run.push(p);
+        } else if (run.length) {
+          runs.push(run);
+          run = [];
         }
-        return {
-          x: W/2 + state.panX + (projF * dirCam.x / dirCam.z) * scalePx,
-          y: H/2 + state.panY - (projF * dirCam.y / dirCam.z) * scalePx,
-          finite:true
-        };
+      }
+      if (run.length) runs.push(run);
+      if (runs.length > 1 && runs[0].length && runs[runs.length-1].length) {
+        runs[0] = runs[runs.length-1].concat(runs[0]);
+        runs.pop();
       }
 
-      return {
-        f, projF, baseProjF, pitch, eye, baseEye, dollyDelta, worldToCamera, cameraToWorld, objectRot, center,
-        worldCorners, cameraCorners, axesWorld, axesCamera, faces, edges,
-        project, horizonYNorm, leftDirWorld, rightDirWorld, vpFromDirection
-      };
-    }
-
-    function classifyMode(){
-      const levelHead = near(state.pitch,0.25);
-      const levelBoxTilt = near(state.tiltX,0.25) && near(state.tiltZ,0.25);
-      const onePoint = levelHead && levelBoxTilt && near(state.yaw,0.25);
-      const twoPoint = levelHead && levelBoxTilt && !near(state.yaw,0.25);
-      const incline = levelHead && near(state.yaw,0.25) && !near(state.tiltX,0.25) && near(state.tiltZ,0.25);
-      const aux = levelHead && (!near(state.tiltZ,0.25) || (!near(state.tiltX,0.25) && !near(state.yaw,0.25)));
-      const three = !levelHead;
-      if(onePoint) return 'One-point perspective';
-      if(twoPoint) return 'Two-point perspective';
-      if(incline && state.tiltX > 0) return 'Incline in one-point';
-      if(incline && state.tiltX < 0) return 'Decline in one-point';
-      if(aux) return 'Three-point auxiliary';
-      if(three && state.pitch < 0) return 'Three-point bird’s-eye';
-      if(three && state.pitch > 0) return 'Three-point worm’s-eye';
-      return 'Perspective study';
-    }
-
-    function edgeHasVisibleFace(a,b, faceVisibleMap){
-      const facePairs = {
-        '0-1':['back','bottom'], '1-2':['back','right'], '2-3':['back','top'], '0-3':['back','left'],
-        '4-5':['front','bottom'], '5-6':['front','right'], '6-7':['front','top'], '4-7':['front','left'],
-        '0-4':['left','bottom'], '1-5':['right','bottom'], '2-6':['right','top'], '3-7':['left','top']
-      };
-      const key = `${Math.min(a,b)}-${Math.max(a,b)}`;
-      const pair = facePairs[key] || [];
-      return pair.some(f => faceVisibleMap[f]);
-    }
-
-    function label(ctx, text, x, y, color='white'){
-      ctx.save();
-      ctx.font = '12px Inter, sans-serif';
-      ctx.fillStyle = 'rgba(0,0,0,0.65)';
-      const padX = 6;
-      const w = ctx.measureText(text).width + padX*2;
-      ctx.fillRect(x - 3, y - 13, w, 20);
-      ctx.fillStyle = color;
-      ctx.fillText(text, x + padX - 3, y + 1);
-      ctx.restore();
-    }
-
-    function drawGrid(ctx, scene, W, H){
-      const lines = [];
-      for(let x=-20; x<=20; x++) lines.push([{x, y:0, z:2}, {x, y:0, z:36}]);
-      for(let z=2; z<=36; z+=1) lines.push([{x:-20, y:0, z}, {x:20, y:0, z}]);
-      ctx.save();
-      for(const line of lines){
-        const a = scene.project(matVec(scene.worldToCamera, sub(line[0], scene.eye)), W, H);
-        const b = scene.project(matVec(scene.worldToCamera, sub(line[1], scene.eye)), W, H);
-        if(!a || !b) continue;
-        const alpha = clamp(1 - Math.min(a.z,b.z)/42, 0.05, 0.22);
-        ctx.strokeStyle = `rgba(255,255,255,${alpha})`;
-        ctx.lineWidth = 1;
-        ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
-      }
-      ctx.restore();
-    }
-
-    function updateNarration(){ perspectiveBadge.textContent = classifyMode(); }
-
-    function drawMain(){
-      const {ctx, width:W, height:H} = resizeCanvasToDisplaySize(mainCanvas);
-      const scene = getScene();
-
-      const grad = ctx.createLinearGradient(0,0,0,H);
-      grad.addColorStop(0,'#111823');
-      grad.addColorStop(0.55,'#0d121a');
-      grad.addColorStop(1,'#0a0d12');
-      ctx.fillStyle = grad;
-      ctx.fillRect(0,0,W,H);
-
-      ctx.save();
-      ctx.strokeStyle = 'rgba(255,255,255,0.03)';
-      ctx.lineWidth = 1;
-      for(let x=0; x<=W; x+=32){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
-      for(let y=0; y<=H; y+=32){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
-      ctx.restore();
-
-      if(state.showGrid) drawGrid(ctx, scene, W, H);
-
-      const centerX = W/2 + state.panX;
-      const centerY = H/2 + state.panY;
-      const scalePx = Math.min(W,H) * 0.31 * state.viewZoom;
-      const horizonY = centerY - scene.horizonYNorm * scalePx;
-      const coneRadius = scalePx * scene.projF * Math.tan(deg(state.coneAngle)/2);
-
-      if(state.showCone){
+      for (const horizonRun of runs) drawPolyline(horizonRun,COLORS.horizon,1.4,[8,7]);
+      const longest = runs.slice().sort((a,b)=>b.length-a.length)[0];
+      if (longest && longest.length) {
+        const mid = longest[Math.floor(longest.length/2)];
         ctx.save();
-        ctx.strokeStyle = 'rgba(255,255,255,0.22)';
-        ctx.setLineDash([8,8]);
-        ctx.lineWidth = 1.6;
-        ctx.beginPath(); ctx.arc(centerX, centerY, coneRadius, 0, Math.PI*2); ctx.stroke();
-        ctx.setLineDash([]);
+        ctx.fillStyle = "rgba(255,255,255,.76)";
+        ctx.font = `${Math.max(11,w*0.016)}px system-ui, sans-serif`;
+        ctx.fillText("HORIZON", Math.min(w-70,Math.max(8,mid.x+8)), Math.min(h-8,Math.max(18,mid.y-7)));
         ctx.restore();
       }
+      return;
+    }
 
+    const vx = projectDirection({x:1,y:0,z:0}, cam);
+    const vz = projectDirection({x:0,y:0,z:1}, cam);
+
+    let line = null;
+    if (vx.finite && vz.finite) {
+      line = clipInfiniteLineToRect(vx, vz, w, h);
+    } else if (vx.finite && !vz.finite) {
+      line = clipInfiniteLineToRect(vx, {x:vx.x+vz.dx, y:vx.y+vz.dy}, w, h);
+    } else if (!vx.finite && vz.finite) {
+      line = clipInfiniteLineToRect(vz, {x:vz.x+vx.dx, y:vz.y+vx.dy}, w, h);
+    }
+
+    if (line) {
+      drawSegment(line[0],line[1],COLORS.horizon,1.4,[8,7]);
+      const mid = {x:(line[0].x+line[1].x)/2, y:(line[0].y+line[1].y)/2};
       ctx.save();
-      ctx.strokeStyle = '#6dd3ff';
-      ctx.lineWidth = 1.4;
-      ctx.beginPath(); ctx.moveTo(0, centerY); ctx.lineTo(W, centerY); ctx.stroke();
-      ctx.strokeStyle = '#73f59d';
-      ctx.beginPath(); ctx.moveTo(centerX, 0); ctx.lineTo(centerX, H); ctx.stroke();
+      ctx.fillStyle = "rgba(255,255,255,.76)";
+      ctx.font = `${Math.max(11, w*0.016)}px system-ui, sans-serif`;
+      ctx.fillText("HORIZON", Math.min(w-70, Math.max(8,mid.x+8)), Math.min(h-8, Math.max(18,mid.y-7)));
       ctx.restore();
+    }
+  }
 
-      ctx.save();
-      ctx.strokeStyle = '#ffd166';
-      ctx.setLineDash([10,8]);
-      ctx.lineWidth = 1.6;
-      ctx.beginPath(); ctx.moveTo(0,horizonY); ctx.lineTo(W,horizonY); ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.restore();
+  function drawFisheyeBoundary(cam) {
+    if (!cam.fisheye) return;
+    ctx.save();
+    ctx.strokeStyle = "rgba(255,255,255,.34)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(cam.cx,cam.cy,cam.fisheyeRadius,0,Math.PI*2);
+    ctx.stroke();
+    ctx.restore();
+  }
 
-      const vps = scene.axesCamera.map(axis => scene.vpFromDirection(axis, W, H));
-      const colors = ['#77e4ff','#ffe57a','#ff82c7'];
-      const projected = scene.cameraCorners.map(c => scene.project(c, W, H));
-      const faceVisibleMap = Object.fromEntries(scene.faces.map(f => [f.name, f.visible]));
+  function cubeGeometry(state) {
+    const yaw = deg(state.yaw), roll = deg(state.roll), pitch = deg(state.pitch);
+    const center = {x:0, y:state.cubeY, z:state.cubeDepth};
+    const h = state.cubeSize * 0.5;
 
-      if(state.fillBox){
-        ctx.save();
-        for(const face of scene.faces){
-          const pts = face.idx.map(i => projected[i]).filter(Boolean);
-          if(pts.length !== 4 || !face.visible) continue;
-          ctx.beginPath();
-          ctx.moveTo(pts[0].x, pts[0].y);
-          for(let i=1;i<pts.length;i++) ctx.lineTo(pts[i].x, pts[i].y);
-          ctx.closePath();
-          ctx.fillStyle = face.fill;
-          ctx.fill();
-        }
-        ctx.restore();
+    const local = [
+      {x:-h,y:-h,z:-h}, {x:h,y:-h,z:-h},
+      {x:h,y:h,z:-h},   {x:-h,y:h,z:-h},
+      {x:-h,y:-h,z:h},  {x:h,y:-h,z:h},
+      {x:h,y:h,z:h},    {x:-h,y:h,z:h}
+    ];
+
+    const world = local.map(p => V.add(rotateYawRollPitch(p,yaw,roll,pitch), center));
+
+    const axes = {
+      x: rotateYawRollPitch({x:1,y:0,z:0},yaw,roll,pitch),
+      y: rotateYawRollPitch({x:0,y:1,z:0},yaw,roll,pitch),
+      z: rotateYawRollPitch({x:0,y:0,z:1},yaw,roll,pitch)
+    };
+
+    const edges = [
+      [0,1,"x"], [3,2,"x"], [4,5,"x"], [7,6,"x"],
+      [0,3,"y"], [1,2,"y"], [4,7,"y"], [5,6,"y"],
+      [0,4,"z"], [1,5,"z"], [2,6,"z"], [3,7,"z"]
+    ];
+
+    return {world, axes, edges};
+  }
+
+  function rayToFrame(start, target, w, h) {
+    const dx = target.x - start.x;
+    const dy = target.y - start.y;
+    const candidates = [];
+
+    if (Math.abs(dx) > EPS) {
+      const tx0 = (0 - start.x) / dx;
+      const tx1 = (w - start.x) / dx;
+      if (tx0 >= 0) candidates.push(tx0);
+      if (tx1 >= 0) candidates.push(tx1);
+    }
+    if (Math.abs(dy) > EPS) {
+      const ty0 = (0 - start.y) / dy;
+      const ty1 = (h - start.y) / dy;
+      if (ty0 >= 0) candidates.push(ty0);
+      if (ty1 >= 0) candidates.push(ty1);
+    }
+
+    const valid = candidates
+      .map(t => ({t, x:start.x + dx*t, y:start.y + dy*t}))
+      .filter(p => p.x >= -0.5 && p.x <= w+0.5 && p.y >= -0.5 && p.y <= h+0.5)
+      .sort((a,b) => a.t-b.t);
+
+    if (!valid.length) return null;
+    const end = valid[0];
+    return [{x:start.x,y:start.y}, {x:end.x,y:end.y}];
+  }
+
+  function drawFisheyeConstructionRay(start, direction, targetVP, cam, style) {
+    const points = [];
+    const scale = 0.18;
+    for (let i=0; i<=90; i++) {
+      const distance = scale * (Math.exp(i/9)-1);
+      const p = projectWorld(V.add(start,V.scale(direction,distance)),cam);
+      if (p) {
+        points.push(p);
+      } else if (points.length) {
+        break;
       }
+    }
 
-      if(state.showGuides){
-        const edgeAxisMap = {
-          '0-1':0,'1-2':1,'2-3':0,'0-3':1,
-          '4-5':0,'5-6':1,'6-7':0,'4-7':1,
-          '0-4':2,'1-5':2,'2-6':2,'3-7':2
-        };
-        ctx.save();
-        ctx.setLineDash([7,7]);
-        ctx.lineWidth = 1.2;
-        for(const [a,b] of scene.edges){
-          const pa = projected[a], pb = projected[b];
-          if(!pa || !pb) continue;
-          const key = `${Math.min(a,b)}-${Math.max(a,b)}`;
-          const axis = edgeAxisMap[key];
-          const vp = vps[axis];
-          const color = axis===0 ? '#77e4ff' : axis===1 ? '#ffe57a' : '#ff82c7';
-          ctx.strokeStyle = color;
-          const use = pa.z < pb.z ? pa : pb;
-          if(Number.isFinite(vp.x) && Number.isFinite(vp.y) && Math.hypot(vp.x-use.x, vp.y-use.y) < 5000){
-            ctx.beginPath(); ctx.moveTo(use.x, use.y); ctx.lineTo(vp.x, vp.y); ctx.stroke();
+    if (targetVP?.visible && points.length) {
+      const last = points[points.length-1];
+      if (Math.hypot(last.x-targetVP.x,last.y-targetVP.y) > 0.5) points.push(targetVP);
+    }
+    drawPolyline(points,style,1,[5,6]);
+  }
+
+  function drawConstructionLines(world, projected, edges, axes, vanishing, cam, w, h) {
+    const seen = new Set();
+
+    for (const [a,b,axis] of edges) {
+      const endpoints = [
+        {idx:a,direction:V.scale(axes[axis],-1),vp:vanishing[axis].negative,sign:"-"},
+        {idx:b,direction:axes[axis],vp:vanishing[axis].positive,sign:"+"}
+      ];
+
+      for (const endpoint of endpoints) {
+        const key = `${endpoint.idx}-${axis}-${endpoint.sign}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+
+        const p = projected[endpoint.idx];
+        if (!p) continue;
+        const style = hexToRgba(COLORS[axis],0.22);
+
+        if (cam.fisheye) {
+          drawFisheyeConstructionRay(world[endpoint.idx],endpoint.direction,endpoint.vp,cam,style);
+          continue;
+        }
+
+        const vp = endpoint.vp;
+        let ray = null;
+        if (vp.finite) {
+          const vpVisible = vp.x >= 0 && vp.x <= w && vp.y >= 0 && vp.y <= h;
+          ray = vpVisible
+            ? [{x:p.x,y:p.y},{x:vp.x,y:vp.y}]
+            : rayToFrame(p,vp,w,h);
+        } else {
+          ray = rayToFrame(p,{x:p.x+vp.dx,y:p.y+vp.dy},w,h);
+        }
+        if (ray) drawSegment(ray[0],ray[1],style,1,[5,6]);
+      }
+    }
+  }
+
+  function hexToRgba(hex, alpha) {
+    const n = parseInt(hex.slice(1),16);
+    const r = (n>>16)&255, g=(n>>8)&255, b=n&255;
+    return `rgba(${r},${g},${b},${alpha})`;
+  }
+
+  function drawCube(world, projected, edges, cam) {
+    const sorted = edges.slice().sort((e1,e2) => {
+      const d1 = ((projected[e1[0]]?.depth || 0)+(projected[e1[1]]?.depth || 0))/2;
+      const d2 = ((projected[e2[0]]?.depth || 0)+(projected[e2[1]]?.depth || 0))/2;
+      return d2-d1;
+    });
+
+    const edgePaths = [];
+    for (const edge of sorted) {
+      const [a,b,axis] = edge;
+      const runs = cam.fisheye
+        ? sampleWorldSegment(world[a],world[b],cam,28)
+        : [[projected[a],projected[b]].filter(Boolean)];
+      edgePaths.push({edge,axis,runs});
+      for (const run of runs) {
+        drawPolyline(run,"rgba(0,0,0,.72)",5);
+        drawPolyline(run,COLORS[axis],2.4);
+      }
+    }
+    viewState.latestEdgePaths = edgePaths;
+
+    for (const p of projected) {
+      if (!p) continue;
+      ctx.save();
+      ctx.fillStyle = "#f7fbff";
+      ctx.beginPath();
+      ctx.arc(p.x,p.y,2.3,0,Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  function drawVanishingPoint(vp, color, label, w, h) {
+    if (!vp?.finite || vp.visible === false) return;
+    if (vp.x < 0 || vp.x > w || vp.y < 0 || vp.y > h) return;
+
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.fillStyle = "rgba(10,13,18,.86)";
+    ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    ctx.arc(vp.x,vp.y,8,0,Math.PI*2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = color;
+    ctx.font = `700 ${Math.max(11,w*0.016)}px system-ui, sans-serif`;
+    const textWidth = ctx.measureText(label).width;
+    const tx = vp.x > w*0.72 ? vp.x-textWidth-12 : vp.x+12;
+    const ty = vp.y < h*0.18 ? vp.y+22 : vp.y-10;
+    ctx.fillText(label,tx,ty);
+    ctx.restore();
+  }
+
+  function formatVP(vp, w, h) {
+    if (!vp) return "—";
+    if (!vp.finite) return "at infinity · parallel in image plane";
+    if (vp.visible === false) return "outside visible hemisphere";
+    const vis = vp.x>=0 && vp.x<=w && vp.y>=0 && vp.y<=h;
+    return `(${vp.x.toFixed(1)}, ${vp.y.toFixed(1)}) px · ${vis ? "visible" : "off-frame"}`;
+  }
+
+  function formatAxisVP(axisVP, w, h, fisheye) {
+    if (!fisheye) return formatVP(axisVP.positive,w,h);
+    return `+ ${formatVP(axisVP.positive,w,h)} · − ${formatVP(axisVP.negative,w,h)}`;
+  }
+
+  function readState() {
+    return {
+      cubeSize: +controls.cubeSize.value,
+      cubeY: +controls.cubeY.value,
+      cubeDepth: +controls.cubeDepth.value,
+      yaw: +controls.yaw.value,
+      roll: +controls.roll.value,
+      pitch: +controls.pitch.value,
+      fov: +controls.fov.value,
+      cameraHeight: +controls.cameraHeight.value,
+      cameraPitch: +controls.cameraPitch.value,
+      fisheye: controls.fisheye.checked
+    };
+  }
+
+  function updateOutputs(s) {
+    outputs.cubeSize.value = s.cubeSize.toFixed(2);
+    outputs.cubeY.value = s.cubeY.toFixed(2);
+    outputs.cubeDepth.value = s.cubeDepth.toFixed(2);
+    outputs.yaw.value = `${s.yaw.toFixed(0)}°`;
+    outputs.roll.value = `${s.roll.toFixed(0)}°`;
+    outputs.pitch.value = `${s.pitch.toFixed(0)}°`;
+    outputs.fov.value = s.fisheye ? "180° circular" : `${s.fov.toFixed(0)}°`;
+    controls.fov.disabled = s.fisheye;
+    outputs.cameraHeight.value = s.cameraHeight.toFixed(2);
+    outputs.cameraPitch.value = `${s.cameraPitch.toFixed(0)}°`;
+  }
+
+  function resizeCanvas() {
+    const rect = canvas.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const size = Math.max(320, Math.round(rect.width * dpr));
+    if (canvas.width !== size || canvas.height !== size) {
+      canvas.width = size;
+      canvas.height = size;
+    }
+    return {w:size,h:size,dpr};
+  }
+
+  function canvasPointFromEvent(event) {
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: (event.clientX - rect.left) * canvas.width / rect.width,
+      y: (event.clientY - rect.top) * canvas.height / rect.height
+    };
+  }
+
+  function distanceToSegment(p, a, b) {
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const l2 = dx*dx + dy*dy;
+    if (l2 < EPS) return Math.hypot(p.x-a.x, p.y-a.y);
+    let t = ((p.x-a.x)*dx + (p.y-a.y)*dy) / l2;
+    t = Math.max(0, Math.min(1, t));
+    const x = a.x + t*dx;
+    const y = a.y + t*dy;
+    return Math.hypot(p.x-x, p.y-y);
+  }
+
+  function nearestCubeEdge(point, threshold) {
+    if (!viewState.latestEdgePaths) return null;
+    let best = null;
+    for (const entry of viewState.latestEdgePaths) {
+      for (const run of entry.runs) {
+        for (let i=0; i<run.length-1; i++) {
+          const a = run[i];
+          const b = run[i+1];
+          const d = distanceToSegment(point,a,b);
+          if (d <= threshold && (!best || d < best.distance)) {
+            best = {edge:entry.edge,a,b,axis:entry.axis,distance:d};
           }
         }
-        ctx.setLineDash([]);
-        ctx.restore();
       }
+    }
+    return best;
+  }
 
+  function projectedEdgeMidpointFor(state, edge) {
+    const cam = setupCamera(state, canvas.width, canvas.height);
+    const cube = cubeGeometry(state);
+    const [aIdx,bIdx] = edge;
+    const a = projectWorld(cube.world[aIdx],cam);
+    const b = projectWorld(cube.world[bIdx],cam);
+    if (!a || !b) return null;
+    return {x:(a.x+b.x)/2,y:(a.y+b.y)/2};
+  }
+
+  function chooseRotationControl(hit, state) {
+    const ex = hit.b.x-hit.a.x;
+    const ey = hit.b.y-hit.a.y;
+    const el = Math.hypot(ex,ey) || 1;
+    const nx = -ey/el;
+    const ny = ex/el;
+    const base = {x:(hit.a.x+hit.b.x)/2,y:(hit.a.y+hit.b.y)/2};
+
+    const nudge = value => value >= 45 ? value - 1 : value + 1;
+    const tests = {
+      yaw: {...state, yaw: nudge(state.yaw)},
+      roll: {...state, roll: nudge(state.roll)},
+      pitch: {...state, pitch: nudge(state.pitch)}
+    };
+
+    const scores = Object.fromEntries(Object.entries(tests).map(([control,testState]) => {
+      const midpoint = projectedEdgeMidpointFor(testState,hit.edge);
+      const score = midpoint
+        ? Math.abs((midpoint.x-base.x)*nx + (midpoint.y-base.y)*ny)
+        : 0;
+      return [control,score];
+    }));
+
+    const control = Object.keys(scores).reduce((best,current) =>
+      scores[current] > scores[best] ? current : best
+    , "yaw");
+
+    return {control, nx, ny};
+  }
+
+  function draw() {
+    const {w,h} = resizeCanvas();
+    const state = readState();
+    updateOutputs(state);
+
+    ctx.clearRect(0,0,w,h);
+
+    const gradient = ctx.createLinearGradient(0,0,0,h);
+    gradient.addColorStop(0,"#111824");
+    gradient.addColorStop(0.52,"#0d121a");
+    gradient.addColorStop(1,"#080b10");
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0,0,w,h);
+
+    const cam = setupCamera(state,w,h);
+    drawFrameGrid(w,h);
+
+    if (cam.fisheye) {
       ctx.save();
-      for(const [a,b] of scene.edges){
-        const pa = projected[a], pb = projected[b];
-        if(!pa || !pb) continue;
-        ctx.beginPath();
-        ctx.moveTo(pa.x, pa.y); ctx.lineTo(pb.x, pb.y);
-        if(state.ghostBox && !edgeHasVisibleFace(a,b, faceVisibleMap)) {
-          ctx.strokeStyle = 'rgba(255,255,255,0.28)';
-          ctx.setLineDash([6,6]);
-          ctx.lineWidth = 1.2;
-        } else if (!state.ghostBox && !edgeHasVisibleFace(a,b, faceVisibleMap)) {
-          continue;
-        } else {
-          ctx.strokeStyle = '#ffffff';
-          ctx.setLineDash([]);
-          ctx.lineWidth = 2.1;
-        }
-        ctx.stroke();
-      }
-      ctx.restore();
-
-      ctx.save();
-      ctx.fillStyle = '#73f59d';
-      ctx.beginPath(); ctx.arc(centerX, centerY, 4.8, 0, Math.PI*2); ctx.fill();
-      ctx.strokeStyle = 'rgba(115,245,157,0.35)';
-      ctx.lineWidth = 10;
-      ctx.beginPath(); ctx.arc(centerX, centerY, 10, 0, Math.PI*2); ctx.stroke();
-      ctx.restore();
-
-      if(state.showLabels){
-        ctx.save();
-        for(let i=0;i<vps.length;i++){
-          const vp = vps[i];
-          if(!Number.isFinite(vp.x) || !Number.isFinite(vp.y)) continue;
-          if(vp.x < -2000 || vp.x > W+2000 || vp.y < -2000 || vp.y > H+2000) continue;
-          ctx.fillStyle = colors[i];
-          ctx.beginPath(); ctx.arc(vp.x, vp.y, 4, 0, Math.PI*2); ctx.fill();
-          label(ctx, ['VP-X','VP-Y','VP-Z'][i], vp.x + 10, vp.y - 10, colors[i]);
-        }
-        label(ctx, 'Center of vision', centerX + 12, 24, '#73f59d');
-        label(ctx, 'Eye line', 12, centerY - 10, '#6dd3ff');
-        label(ctx, 'Horizon line', 12, horizonY - 10, '#ffd166');
-        if(state.showCone) label(ctx, `Cone ${fmt(state.coneAngle,0)}°`, centerX + coneRadius + 12, centerY - 10, 'rgba(255,255,255,0.85)');
-      }
-
-      updateNarration();
+      ctx.beginPath();
+      ctx.arc(cam.cx,cam.cy,cam.fisheyeRadius,0,Math.PI*2);
+      ctx.clip();
     }
 
-    function applyPreset(name){
-      const presets = {
-        one: { stationDistance: 2.0, coneAngle: 60, pitch: 0, eyeHeight: 1.6, boxX: 0, boxZ: 10, boxLift: 0.1, cubeSize: 3.0, boxW: 3.0, boxH: 3.0, boxD: 3.0, yaw: 0, tiltX: 0, tiltZ: 0 },
-        two: { stationDistance: 2.0, coneAngle: 60, pitch: 0, eyeHeight: 1.6, boxX: 0, boxZ: 10, boxLift: 0.1, cubeSize: 3.0, boxW: 3.0, boxH: 3.0, boxD: 3.0, yaw: 34, tiltX: 0, tiltZ: 0 },
-        bird: { stationDistance: 2.0, coneAngle: 60, pitch: -24, eyeHeight: 3.2, boxX: 0, boxZ: 10, boxLift: 0, cubeSize: 3.0, boxW: 3.0, boxH: 3.0, boxD: 3.0, yaw: 34, tiltX: 0, tiltZ: 0 },
-        worm: { stationDistance: 2.0, coneAngle: 60, pitch: 26, eyeHeight: 1.0, boxX: 0, boxZ: 10, boxLift: 0, cubeSize: 3.2, boxW: 3.2, boxH: 3.2, boxD: 3.2, yaw: 32, tiltX: 0, tiltZ: 0 },
-        incline: { stationDistance: 2.0, coneAngle: 60, pitch: 0, eyeHeight: 1.6, boxX: 0, boxZ: 10, boxLift: 0, cubeSize: 2.8, boxW: 2.8, boxH: 2.8, boxD: 2.8, yaw: 0, tiltX: 26, tiltZ: 0 },
-        decline: { stationDistance: 2.0, coneAngle: 60, pitch: 0, eyeHeight: 1.6, boxX: 0, boxZ: 10, boxLift: 0, cubeSize: 2.8, boxW: 2.8, boxH: 2.8, boxD: 2.8, yaw: 0, tiltX: -26, tiltZ: 0 },
-        aux: { stationDistance: 2.0, coneAngle: 60, pitch: 0, eyeHeight: 1.6, boxX: 0.5, boxZ: 10, boxLift: 1.2, cubeSize: 3.0, boxW: 3.0, boxH: 3.0, boxD: 3.0, yaw: 26, tiltX: 18, tiltZ: 22 }
-      };
-      Object.assign(state, presets[name], { panX: 0, panY: 0, viewZoom: 1 });
-      state.preset = name;
-      syncInputs();
-      render();
+    drawGroundPlane(cam);
+    drawGroundGrid(cam,w,h);
+    drawHorizon(cam,w,h);
+
+    const cube = cubeGeometry(state);
+    const projected = cube.world.map(p => projectWorld(p,cam));
+    viewState.latestProjected = projected;
+    viewState.latestEdges = cube.edges;
+    viewState.latestState = state;
+    viewState.latestCamera = cam;
+    const vanishing = {
+      x: projectAxisVanishing(cube.axes.x,cam),
+      y: projectAxisVanishing(cube.axes.y,cam),
+      z: projectAxisVanishing(cube.axes.z,cam)
+    };
+
+    drawConstructionLines(cube.world,projected,cube.edges,cube.axes,vanishing,cam,w,h);
+    drawCube(cube.world,projected,cube.edges,cam);
+
+    if (cam.fisheye) ctx.restore();
+
+    if (cam.fisheye) {
+      drawVanishingPoint(vanishing.x.positive,COLORS.x,"VP +X",w,h);
+      drawVanishingPoint(vanishing.x.negative,COLORS.x,"VP −X",w,h);
+      drawVanishingPoint(vanishing.y.positive,COLORS.y,"VP +Y",w,h);
+      drawVanishingPoint(vanishing.y.negative,COLORS.y,"VP −Y",w,h);
+      drawVanishingPoint(vanishing.z.positive,COLORS.z,"VP +Z",w,h);
+      drawVanishingPoint(vanishing.z.negative,COLORS.z,"VP −Z",w,h);
+      drawFisheyeBoundary(cam);
+    } else {
+      drawVanishingPoint(vanishing.x.positive,COLORS.x,"VP X",w,h);
+      drawVanishingPoint(vanishing.y.positive,COLORS.y,"VP Y",w,h);
+      drawVanishingPoint(vanishing.z.positive,COLORS.z,"VP Z",w,h);
     }
 
-    function syncInputs(){
-      for(const id of sliders){
-        const el = document.getElementById(id);
-        el.value = state[id];
-        const out = document.getElementById(id + 'Val');
-        const suffix = ['pitch','yaw','tiltX','tiltZ','coneAngle'].includes(id) ? '°' : '';
-        out.textContent = fmt(state[id], ['pitch','yaw','tiltX','tiltZ','coneAngle'].includes(id) ? 0 : 2) + suffix;
+    ctx.save();
+    ctx.strokeStyle = "rgba(255,255,255,.16)";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(1,1,w-2,h-2);
+    ctx.restore();
+
+    outputs.vpX.textContent = formatAxisVP(vanishing.x,w,h,state.fisheye);
+    outputs.vpY.textContent = formatAxisVP(vanishing.y,w,h,state.fisheye);
+    outputs.vpZ.textContent = formatAxisVP(vanishing.z,w,h,state.fisheye);
+  }
+
+  Object.values(controls).forEach(el => {
+    el.addEventListener("input", draw);
+    el.addEventListener("change", draw);
+    el.addEventListener("dblclick", event => {
+      event.preventDefault();
+      if (el.type === "checkbox") {
+        el.checked = el.dataset.default === "true";
+      } else {
+        el.value = el.dataset.default;
       }
-      for(const id of checks) document.getElementById(id).checked = state[id];
-      [...presetBar.querySelectorAll('[data-preset]')].forEach(btn => btn.classList.toggle('active', btn.dataset.preset === state.preset));
+      draw();
+    });
+  });
+
+  canvas.addEventListener("pointerdown", event => {
+    if (event.button !== 0) return;
+    const p = canvasPointFromEvent(event);
+    const threshold = Math.max(8, canvas.width * 0.014);
+    const hit = nearestCubeEdge(p,threshold);
+
+    viewState.dragging = true;
+    viewState.lastX = p.x;
+    viewState.lastY = p.y;
+    viewState.startX = p.x;
+    viewState.startY = p.y;
+    canvas.classList.add("dragging");
+    canvas.setPointerCapture(event.pointerId);
+
+    if (hit && viewState.latestState) {
+      const choice = chooseRotationControl(hit,viewState.latestState);
+      viewState.dragMode = "rotate";
+      viewState.rotateControl = choice.control;
+      viewState.rotateNormalX = choice.nx;
+      viewState.rotateNormalY = choice.ny;
+      viewState.startYaw = +controls.yaw.value;
+      viewState.startRoll = +controls.roll.value;
+      viewState.startPitch = +controls.pitch.value;
+    } else {
+      viewState.dragMode = "pan";
+    }
+  });
+
+  canvas.addEventListener("pointermove", event => {
+    if (!viewState.dragging) return;
+    const p = canvasPointFromEvent(event);
+
+    if (viewState.dragMode === "rotate") {
+      const dx = p.x-viewState.startX;
+      const dy = p.y-viewState.startY;
+      const signedDistance = dx*viewState.rotateNormalX + dy*viewState.rotateNormalY;
+      const degrees = signedDistance * 0.22;
+
+      if (viewState.rotateControl === "yaw") {
+        controls.yaw.value = Math.max(-45,Math.min(45,viewState.startYaw+degrees));
+      } else if (viewState.rotateControl === "roll") {
+        controls.roll.value = Math.max(-45,Math.min(45,viewState.startRoll+degrees));
+      } else {
+        controls.pitch.value = Math.max(-45,Math.min(45,viewState.startPitch+degrees));
+      }
+      draw();
+    } else {
+      viewState.panX += p.x-viewState.lastX;
+      viewState.panY += p.y-viewState.lastY;
+      viewState.lastX = p.x;
+      viewState.lastY = p.y;
+      draw();
+    }
+  });
+
+  function endPan(event) {
+    if (!viewState.dragging) return;
+    viewState.dragging = false;
+    viewState.dragMode = null;
+    viewState.rotateControl = null;
+    canvas.classList.remove("dragging");
+    if (event && canvas.hasPointerCapture(event.pointerId)) {
+      canvas.releasePointerCapture(event.pointerId);
+    }
+  }
+
+  canvas.addEventListener("pointerup", endPan);
+  canvas.addEventListener("pointercancel", endPan);
+  canvas.addEventListener("pointerleave", event => {
+    if (event.buttons === 0) endPan(event);
+  });
+
+  canvas.addEventListener("dblclick", event => {
+    event.preventDefault();
+    viewState.panX = 0;
+    viewState.panY = 0;
+    draw();
+  });
+
+  canvas.addEventListener("wheel", event => {
+    event.preventDefault();
+
+    const state = readState();
+    const oldCam = setupCamera(state,canvas.width,canvas.height);
+    const oldOrigin = projectWorld({x:0,y:0,z:0},oldCam);
+
+    const factor = Math.exp(-event.deltaY * 0.0012);
+    viewState.zoom = Math.min(8, Math.max(0.2, viewState.zoom * factor));
+
+    const newCam = setupCamera(state,canvas.width,canvas.height);
+    const newOrigin = projectWorld({x:0,y:0,z:0},newCam);
+
+    if (oldOrigin && newOrigin) {
+      viewState.panX += oldOrigin.x-newOrigin.x;
+      viewState.panY += oldOrigin.y-newOrigin.y;
     }
 
-    function render(){ drawMain(); }
+    draw();
+  }, {passive:false});
 
-    sliders.forEach(id => {
-      document.getElementById(id).addEventListener('input', e => {
-        const value = parseFloat(e.target.value);
-        if(id === 'cubeSize'){
-          state.cubeSize = value;
-          state.boxW = value; state.boxH = value; state.boxD = value;
-        } else {
-          state[id] = value;
-        }
-        state.preset = '';
-        syncInputs();
-        render();
-      });
-    });
-
-    sliders.forEach(id => {
-      document.getElementById(id).addEventListener('dblclick', () => {
-        if(id === 'cubeSize'){
-          state.cubeSize = defaultState.cubeSize;
-          state.boxW = defaultState.boxW; state.boxH = defaultState.boxH; state.boxD = defaultState.boxD;
-        } else {
-          state[id] = defaultState[id];
-        }
-        state.preset = '';
-        syncInputs();
-        render();
-      });
-    });
-
-    checks.forEach(id => {
-      document.getElementById(id).addEventListener('change', e => {
-        state[id] = e.target.checked;
-        syncInputs();
-        render();
-      });
-    });
-
-    let drag = null;
-    canvasWrap.addEventListener('mousedown', e => {
-      drag = { x: e.clientX, y: e.clientY, panX: state.panX, panY: state.panY };
-      canvasWrap.classList.add('dragging');
-      e.preventDefault();
-    });
-    window.addEventListener('mousemove', e => {
-      if(!drag) return;
-      state.panX = drag.panX + (e.clientX - drag.x);
-      state.panY = drag.panY + (e.clientY - drag.y);
-      state.preset = '';
-      render();
-    });
-    window.addEventListener('mouseup', () => {
-      drag = null;
-      canvasWrap.classList.remove('dragging');
-    });
-    canvasWrap.addEventListener('mouseleave', () => {
-      if(!drag) canvasWrap.classList.remove('dragging');
-    });
-    canvasWrap.addEventListener('wheel', e => {
-      e.preventDefault();
-      const factor = Math.exp(-e.deltaY * 0.0012);
-      state.viewZoom = clamp(state.viewZoom * factor, 0.2, 6);
-      state.preset = '';
-      render();
-    }, { passive: false });
-    canvasWrap.addEventListener('dblclick', () => {
-      state.panX = 0; state.panY = 0; state.viewZoom = 1;
-      render();
-    });
-
-    [...presetBar.querySelectorAll('[data-preset]')].forEach(btn => btn.addEventListener('click', () => applyPreset(btn.dataset.preset)));
-    document.getElementById('resetBtn').addEventListener('click', () => applyPreset('one'));
-    window.addEventListener('resize', render);
-
-    applyPreset('one');
-  </script>
+  window.addEventListener("resize", draw, {passive:true});
+  draw();
+})();
+</script>
 </body>
 </html>
