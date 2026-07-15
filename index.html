@@ -277,7 +277,7 @@
             <label for="cubeSize">Cube size</label>
             <output id="cubeSizeOut"></output>
           </div>
-          <input id="cubeSize" type="range" min="0.25" max="3" step="0.05" value="1" data-default="1">
+          <input id="cubeSize" type="range" min="0.25" max="10" step="0.05" value="1" data-default="1">
         </div>
 
         <div class="control">
@@ -352,6 +352,11 @@
           <label for="fisheye">5/6-point fisheye · 180°</label>
           <input id="fisheye" type="checkbox" data-default="false">
         </div>
+
+        <div class="control toggle-control">
+          <label for="guidelines">Guidelines</label>
+          <input id="guidelines" type="checkbox" data-default="false">
+        </div>
       </section>
     </aside>
   </div>
@@ -361,7 +366,7 @@
     <span class="green">Local Y edges</span>
     <span class="blue">Local Z edges</span>
   </div>
-  <div class="footer-note">Vanishing-point coordinates are reported in canvas pixels from the top-left corner. The default cube centre is (0, 0, 0), size is 1, yaw is 0°, roll is 0°, cube pitch is 0°, and camera pitch is 0°. Moving the cube vertically no longer changes the horizon. Camera pitch controls the horizon height and creates the vertical vanishing point; camera height moves the eye without tilting it. Double-click any slider to reset it. Field-of-view changes are distance-compensated so the cube remains approximately the same size on screen. Drag empty canvas space to pan, use the mouse wheel to zoom about world origin (0, 0), double-click the canvas to return the origin to centre, and drag a cube edge to rotate using the most screen-normal available yaw, roll, or pitch axis. Construction lines now stop at a visible vanishing point instead of running past it. Enable 5/6-point fisheye for a 180° circular projection with curved lines and separate positive and negative axis vanishing points.</div>
+  <div class="footer-note">Vanishing-point coordinates are reported in canvas pixels from the top-left corner. The default cube centre is (0, 0, 0), size is 1, yaw is 0°, roll is 0°, cube pitch is 0°, and camera pitch is 0°. Moving the cube vertically no longer changes the horizon. Camera pitch controls the horizon height and creates the vertical vanishing point; camera height moves the eye without tilting it. Double-click any slider to reset it. Double-click the canvas to reset all sliders and centre the view without changing the fisheye checkbox. Field-of-view changes are distance-compensated so the cube remains approximately the same size on screen. Drag empty canvas space to pan, use the mouse wheel to zoom about world origin (0, 0), and drag a cube edge to rotate using the most screen-normal available yaw, roll, or pitch axis. Construction lines now stop at a visible vanishing point instead of running past it. Enable 5/6-point fisheye for a 180° circular projection with curved lines and separate positive and negative axis vanishing points. Toggle Guidelines to draw low-opacity coloured rays from each outer frame-grid intercept to the current vanishing points.</div>
 </main>
 
 <script>
@@ -381,7 +386,8 @@
     fov: document.getElementById("fov"),
     cameraHeight: document.getElementById("cameraHeight"),
     cameraPitch: document.getElementById("cameraPitch"),
-    fisheye: document.getElementById("fisheye")
+    fisheye: document.getElementById("fisheye"),
+    guidelines: document.getElementById("guidelines")
   };
 
   const outputs = {
@@ -992,6 +998,48 @@
     return `+ ${formatVP(axisVP.positive,w,h)} · − ${formatVP(axisVP.negative,w,h)}`;
   }
 
+  function frameGridIntercepts(w, h) {
+    const points = [];
+    const seen = new Set();
+
+    function add(x, y) {
+      const key = `${Math.round(x*1000)}:${Math.round(y*1000)}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      points.push({x, y});
+    }
+
+    for (let i = 0; i <= 10; i++) {
+      const x = (i / 10) * w;
+      const y = (i / 10) * h;
+      add(x, 0);
+      add(x, h);
+      add(0, y);
+      add(w, y);
+    }
+
+    return points;
+  }
+
+  function drawGuidelines(vanishing, w, h, fisheye) {
+    const intercepts = frameGridIntercepts(w, h);
+    const axisSets = [
+      {color: COLORS.x, vps: fisheye ? [vanishing.x.positive, vanishing.x.negative] : [vanishing.x.positive]},
+      {color: COLORS.y, vps: fisheye ? [vanishing.y.positive, vanishing.y.negative] : [vanishing.y.positive]},
+      {color: COLORS.z, vps: fisheye ? [vanishing.z.positive, vanishing.z.negative] : [vanishing.z.positive]}
+    ];
+
+    for (const axis of axisSets) {
+      const stroke = hexToRgba(axis.color, 0.12);
+      for (const vp of axis.vps) {
+        if (!vp || vp.visible === false || vp.finite === false || !Number.isFinite(vp.x) || !Number.isFinite(vp.y)) continue;
+        for (const p of intercepts) {
+          drawSegment(p, {x: vp.x, y: vp.y}, stroke, 2.4);
+        }
+      }
+    }
+  }
+
   function readState() {
     return {
       cubeSize: +controls.cubeSize.value,
@@ -1003,7 +1051,8 @@
       fov: +controls.fov.value,
       cameraHeight: +controls.cameraHeight.value,
       cameraPitch: +controls.cameraPitch.value,
-      fisheye: controls.fisheye.checked
+      fisheye: controls.fisheye.checked,
+      guidelines: controls.guidelines.checked
     };
   }
 
@@ -1124,19 +1173,6 @@
     ctx.fillRect(0,0,w,h);
 
     const cam = setupCamera(state,w,h);
-    drawFrameGrid(w,h);
-
-    if (cam.fisheye) {
-      ctx.save();
-      ctx.beginPath();
-      ctx.arc(cam.cx,cam.cy,cam.fisheyeRadius,0,Math.PI*2);
-      ctx.clip();
-    }
-
-    drawGroundPlane(cam);
-    drawGroundGrid(cam,w,h);
-    drawHorizon(cam,w,h);
-
     const cube = cubeGeometry(state);
     const projected = cube.world.map(p => projectWorld(p,cam));
     viewState.latestProjected = projected;
@@ -1149,6 +1185,19 @@
       z: projectAxisVanishing(cube.axes.z,cam)
     };
 
+    drawFrameGrid(w,h);
+    if (state.guidelines) drawGuidelines(vanishing,w,h,state.fisheye);
+
+    if (cam.fisheye) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(cam.cx,cam.cy,cam.fisheyeRadius,0,Math.PI*2);
+      ctx.clip();
+    }
+
+    drawGroundPlane(cam);
+    drawGroundGrid(cam,w,h);
+    drawHorizon(cam,w,h);
     drawConstructionLines(cube.world,projected,cube.edges,cube.axes,vanishing,cam,w,h);
     drawCube(cube.world,projected,cube.edges,cam);
 
@@ -1267,6 +1316,12 @@
 
   canvas.addEventListener("dblclick", event => {
     event.preventDefault();
+
+    // Reset every slider while deliberately preserving the fisheye checkbox.
+    Object.values(controls).forEach(control => {
+      if (control.type === "range") control.value = control.dataset.default;
+    });
+
     viewState.panX = 0;
     viewState.panY = 0;
     draw();
