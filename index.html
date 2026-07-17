@@ -16,6 +16,8 @@
     --red: #ff4d5a;
     --green: #49d17d;
     --blue: #4aa3ff;
+    --canvas-display-height: 640px;
+    --ui-scale: 1;
   }
 
   * { box-sizing: border-box; }
@@ -29,8 +31,8 @@
   }
 
   .app {
-    width: min(1380px, calc(100% - 28px));
-    margin: 22px auto 40px;
+    width: 96vw;
+    margin: 2vw auto;
   }
 
   h1 {
@@ -47,10 +49,16 @@
 
   .workspace {
     display: grid;
-    grid-template-columns: minmax(0, 760px) minmax(280px, 360px);
+    grid-template-columns: minmax(0, 80vw) minmax(0, 15vw);
     justify-content: center;
     align-items: start;
-    gap: 18px;
+    gap: 1vw;
+    transition: grid-template-columns .2s ease, gap .2s ease;
+  }
+
+  .workspace.side-collapsed {
+    grid-template-columns: minmax(0, 1fr) 34px;
+    gap: 10px;
   }
 
   .stage-wrap {
@@ -61,8 +69,9 @@
   }
 
   .canvas-shell {
+    position: relative;
     width: 100%;
-    aspect-ratio: 1 / 1;
+    height: var(--canvas-display-height);
     background: #080b10;
     border: 1px solid var(--border);
     border-radius: 14px;
@@ -82,42 +91,206 @@
     cursor: grabbing;
   }
 
-  .vp-readout {
-    width: 100%;
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 8px;
-  }
-
-  .vp {
-    background: var(--panel-2);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 10px 12px;
-    font-size: .88rem;
-    line-height: 1.35;
-    min-width: 0;
-  }
-
-  .vp strong {
-    display: block;
-    margin-bottom: 3px;
-  }
-
-  .vp.red strong { color: var(--red); }
-  .vp.green strong { color: var(--green); }
-  .vp.blue strong { color: var(--blue); }
-
   .controls {
+    position: relative;
     display: grid;
-    gap: 16px;
+    grid-template-rows: minmax(0, 3fr) minmax(0, 2fr);
+    gap: calc(8px * var(--ui-scale));
     min-width: 0;
+    height: var(--canvas-display-height);
+  }
+
+  .controls.is-collapsed {
+    display: block;
+  }
+
+  .controls.is-collapsed .control-group {
+    display: none;
+  }
+
+  .panel-toggle {
+    display: grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    border: 1px solid rgba(230,238,248,.3);
+    border-radius: 7px;
+    background: rgba(12,16,23,.88);
+    color: #dce5f0;
+    font: 700 19px/1 system-ui, sans-serif;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(0,0,0,.35);
+    transition: background .15s ease, border-color .15s ease, transform .15s ease;
+  }
+
+  .panel-toggle:hover,
+  .panel-toggle:focus-visible {
+    background: rgba(35,44,58,.96);
+    border-color: rgba(230,238,248,.68);
+    outline: none;
+  }
+
+  .side-panel-toggle {
+    position: absolute;
+    z-index: 8;
+    top: 8px;
+    left: 0;
+    transform: translateX(-50%);
+  }
+
+  .controls.is-collapsed .side-panel-toggle {
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .legend-panel-toggle {
+    position: absolute;
+    z-index: 8;
+    left: 50%;
+    bottom: 8px;
+    width: 30px;
+    height: 20px;
+    border-radius: 7px 7px 3px 3px;
+    font-size: 15px;
+    transform: translateX(-50%);
+  }
+
+
+  .canvas-elements-panel {
+    position: absolute;
+    z-index: 12;
+    top: 10px;
+    left: 10px;
+    width: min(228px, calc(100% - 20px));
+    overflow: hidden;
+    border: 1px solid rgba(225,235,247,.28);
+    border-radius: 9px;
+    background: rgba(12,16,23,.91);
+    color: var(--text);
+    box-shadow: 0 7px 24px rgba(0,0,0,.38);
+    backdrop-filter: blur(8px);
+  }
+
+  .canvas-elements-panel.is-collapsed {
+    width: auto;
+  }
+
+  .canvas-elements-toggle {
+    width: 100%;
+    min-height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 5px 8px;
+    border: 0;
+    background: rgba(255,255,255,.055);
+    color: var(--text);
+    font: 700 11px/1.1 Inter, ui-sans-serif, system-ui, sans-serif;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  .canvas-elements-toggle:hover,
+  .canvas-elements-toggle:focus-visible {
+    background: rgba(255,255,255,.12);
+    outline: none;
+  }
+
+  .canvas-elements-panel.is-collapsed .canvas-elements-toggle {
+    width: auto;
+  }
+
+  .canvas-elements-panel.is-collapsed .canvas-elements-body {
+    display: none;
+  }
+
+  .canvas-elements-arrow {
+    width: 0;
+    height: 0;
+    flex: 0 0 auto;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 7px solid currentColor;
+    transform: rotate(0deg);
+    transform-origin: 50% 45%;
+    transition: transform .16s ease;
+  }
+
+  .canvas-elements-panel.is-collapsed .canvas-elements-arrow {
+    transform: rotate(-90deg);
+  }
+
+  .canvas-elements-body {
+    padding: 5px 7px 7px;
+  }
+
+  .canvas-elements-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 10px;
+    line-height: 1.15;
+  }
+
+  .canvas-elements-table td {
+    padding: 3px 2px;
+    border-bottom: 1px solid rgba(255,255,255,.07);
+    vertical-align: middle;
+  }
+
+  .canvas-elements-table tr:last-child td {
+    border-bottom: 0;
+  }
+
+  .canvas-elements-table td:last-child {
+    width: 26px;
+    text-align: right;
+  }
+
+  .canvas-elements-table label {
+    display: block;
+    font-size: inherit;
+    font-weight: 560;
+    cursor: pointer;
+  }
+
+  .canvas-elements-table input[type="checkbox"] {
+    width: 13px;
+    height: 13px;
+    margin: 0;
+    vertical-align: middle;
+  }
+
+  .export-png-button {
+    width: 100%;
+    margin-top: 6px;
+    padding: 7px 8px;
+    border: 1px solid rgba(225,235,247,.32);
+    border-radius: 6px;
+    background: rgba(255,255,255,.09);
+    color: var(--text);
+    font: 750 10px/1 Inter, ui-sans-serif, system-ui, sans-serif;
+    letter-spacing: .055em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  .export-png-button:hover,
+  .export-png-button:focus-visible {
+    background: rgba(255,255,255,.17);
+    border-color: rgba(225,235,247,.64);
+    outline: none;
   }
 
   .control-group {
     display: grid;
-    gap: 4px;
-    padding: 10px;
+    align-content: space-between;
+    gap: 0;
+    min-height: 0;
+    overflow: hidden;
+    padding: calc(6px * var(--ui-scale));
     background: linear-gradient(180deg, var(--panel), var(--panel-2));
     border: 1px solid var(--border);
     border-radius: 14px;
@@ -125,20 +298,22 @@
   }
 
   .control-group + .control-group {
-    margin-top: 4px;
+    margin-top: 0;
   }
 
   .control-group-title {
-    margin: 2px 4px 8px;
+    margin: calc(1px * var(--ui-scale)) calc(3px * var(--ui-scale)) calc(4px * var(--ui-scale));
     color: var(--muted);
-    font-size: .76rem;
+    text-align: center;
+    font-size: clamp(.62rem, calc(.76rem * var(--ui-scale)), .76rem);
     font-weight: 750;
     letter-spacing: .09em;
     text-transform: uppercase;
   }
 
   .control {
-    padding: 10px 8px 11px;
+    min-height: 0;
+    padding: calc(4px * var(--ui-scale)) calc(5px * var(--ui-scale));
     border-bottom: 1px solid rgba(255,255,255,.075);
   }
 
@@ -150,23 +325,92 @@
     display: flex;
     align-items: baseline;
     justify-content: space-between;
-    gap: 12px;
-    margin-bottom: 8px;
+    gap: calc(5px * var(--ui-scale));
+    margin-bottom: calc(2px * var(--ui-scale));
   }
 
   label {
     font-weight: 650;
-    font-size: .92rem;
+    font-size: clamp(.68rem, calc(.88rem * var(--ui-scale)), .88rem);
+    line-height: 1.12;
   }
 
   output {
     color: var(--muted);
+    font-size: clamp(.64rem, calc(.82rem * var(--ui-scale)), .82rem);
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
   }
 
+
+  .axis-icon-sprite {
+    position: absolute;
+    width: 0;
+    height: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  .axis-label {
+    display: inline-flex;
+    align-items: center;
+    gap: .48em;
+    min-width: 0;
+  }
+
+  .axis-label svg {
+    width: 1.35em;
+    height: 1.35em;
+    flex: 0 0 auto;
+    overflow: visible;
+  }
+
+  .icon-control {
+    display: grid;
+    grid-template-columns: calc(66px * var(--ui-scale)) minmax(0, 1fr) auto;
+    align-items: center;
+    gap: calc(8px * var(--ui-scale));
+  }
+
+  .icon-control .axis-label {
+    display: grid;
+    place-items: center;
+    width: calc(66px * var(--ui-scale));
+    height: calc(66px * var(--ui-scale));
+    cursor: pointer;
+  }
+
+  .icon-control .axis-label svg {
+    width: calc(60px * var(--ui-scale));
+    height: calc(60px * var(--ui-scale));
+  }
+
+  .icon-control input[type="range"],
+  .icon-control output {
+    align-self: center;
+  }
+
+  .icon-control output {
+    min-width: 3.25em;
+    text-align: right;
+  }
+
+  .sr-only {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+  }
+
   input[type="range"] {
     width: 100%;
+    height: calc(18px * var(--ui-scale));
+    margin: 0;
     accent-color: #dce6f4;
   }
 
@@ -175,13 +419,67 @@
     cursor: not-allowed;
   }
 
+
+  .projection-switch {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: calc(6px * var(--ui-scale));
+    padding-top: calc(5px * var(--ui-scale));
+    padding-bottom: calc(5px * var(--ui-scale));
+  }
+
+  .projection-button {
+    min-width: 0;
+    min-height: calc(58px * var(--ui-scale));
+    display: grid;
+    place-items: center;
+    padding: calc(5px * var(--ui-scale));
+    border: 1px solid rgba(255,255,255,.24);
+    border-radius: calc(8px * var(--ui-scale));
+    background: rgba(255,255,255,.075);
+    color: var(--text);
+    font: inherit;
+    cursor: pointer;
+    transition: opacity .16s ease, filter .16s ease, background .16s ease, border-color .16s ease;
+  }
+
+  .projection-button img {
+    width: calc(46px * var(--ui-scale));
+    height: calc(46px * var(--ui-scale));
+    display: block;
+  }
+
+  .projection-button.is-active {
+    opacity: 1;
+    filter: none;
+    background: rgba(255,255,255,.14);
+    border-color: rgba(255,255,255,.62);
+  }
+
+  .projection-button.is-inactive {
+    opacity: .34;
+    filter: grayscale(1);
+  }
+
+  .projection-button:hover,
+  .projection-button:focus-visible {
+    opacity: .82;
+    outline: none;
+    border-color: rgba(255,255,255,.72);
+  }
+
+  .projection-button.is-active:hover,
+  .projection-button.is-active:focus-visible {
+    opacity: 1;
+  }
+
   .toggle-control {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 14px;
-    padding-top: 13px;
-    padding-bottom: 13px;
+    gap: calc(8px * var(--ui-scale));
+    padding-top: calc(5px * var(--ui-scale));
+    padding-bottom: calc(5px * var(--ui-scale));
   }
 
   .toggle-control label {
@@ -189,8 +487,8 @@
   }
 
   input[type="checkbox"] {
-    width: 1.15rem;
-    height: 1.15rem;
+    width: clamp(.9rem, calc(1.08rem * var(--ui-scale)), 1.08rem);
+    height: clamp(.9rem, calc(1.08rem * var(--ui-scale)), 1.08rem);
     flex: 0 0 auto;
     accent-color: #dce6f4;
   }
@@ -225,148 +523,282 @@
     font-size: .8rem;
   }
 
-  @media (max-width: 980px) {
-    .workspace {
-      grid-template-columns: 1fr;
+  @media (orientation: portrait), (max-width: 1100px) {
+    .app {
+      width: 98vw;
+      margin: 1vw auto;
+    }
+
+    .workspace,
+    .workspace.side-collapsed {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 14px;
+    }
+
+    .stage-wrap,
+    .canvas-shell,
+    .controls {
+      width: 100%;
     }
 
     .controls {
+      --ui-scale: 1;
+      height: auto;
       grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-rows: none;
+      gap: 14px;
+    }
+
+    .controls.is-collapsed {
+      height: 34px;
+    }
+
+    .side-panel-toggle,
+    .controls.is-collapsed .side-panel-toggle {
+      top: 0;
+      left: 50%;
+      transform: translate(-50%,-50%) rotate(90deg);
+    }
+
+    .control-group {
+      overflow: visible;
     }
   }
 
   @media (max-width: 720px) {
     .controls { grid-template-columns: 1fr; }
-    .vp-readout { grid-template-columns: 1fr; }
   }
 </style>
 </head>
 <body>
-<main class="app">
-  <h1>Perspective Cube Lab</h1>
-  <p class="intro">A 1 × 1 × 1 wireframe cube with rectilinear three-point and optional 180° five/six-point fisheye projection.</p>
 
+<svg class="axis-icon-sprite" aria-hidden="true" focusable="false">
+  <symbol id="cube-size-icon" viewBox="0 0 10 10">
+    <path d="m 108.7314,101.56052 9e-5,-29.896072 a 3.0551618,3.0551618 30.00032 0 0 -4.58272,-2.645869 l -25.891101,14.94796 a 9.1654527,9.1654527 120.0005 0 0 -4.58279,7.937463 l -2.87e-4,29.896518 a 3.0551169,3.0551169 30.000322 0 0 4.582671,2.64584 l 25.891397,-14.94834 a 9.1654521,9.1654521 120.00014 0 0 4.58274,-7.9375 z" fill="#999999" transform="matrix(0.09030857,0,0,0.09928083,-1.3216095,-3.3476837)"/>
+    <path d="m 31.269457,101.5629 -9.6e-5,-29.896069 a 3.0551618,3.0551618 149.99968 0 1 4.582722,-2.645869 l 25.891102,14.94796 a 9.1654504,9.1654504 59.999503 0 1 4.582789,7.937463 l 2.8e-4,29.896515 a 3.0551173,3.0551173 149.99969 0 1 -4.582672,2.64584 L 35.852196,109.5004 a 9.1654533,9.1654533 59.999865 0 1 -4.582739,-7.9375 z" fill="#1a1a1a" transform="matrix(0.09030857,0,0,0.09928083,-1.3216095,-3.3476837)"/>
+    <path d="M 65.417133,42.415484 39.526329,57.363438 c -2.036772,1.175923 -2.036788,4.115743 -2.9e-5,5.291688 l 25.890862,14.94837 c 2.835783,1.63727 6.329628,1.637301 9.16544,8e-5 L 100.4739,62.655563 c 2.03677,-1.1759 2.03678,-4.115706 3e-5,-5.291629 L 74.582573,42.415505 c -1.417897,-0.818626 -3.000307,-1.227941 -4.582717,-1.227945 -1.582411,-3e-6 -3.164822,0.409305 -4.582723,1.227924 z" fill="#e6e6e6" transform="matrix(0.09030857,0,0,0.09928083,-1.3216095,-3.3476837)"/>
+    <path d="M 0.45140523,0.45140523 V 4.1020028 L 1.1988637,2.9152301 2.4825932,4.1989596 4.1789269,2.4639341 2.9145432,1.1995504 4.1142132,0.45140523 Z" fill="#ff0000"/>
+    <path d="M 9.5485945,9.5485945 V 5.8979969 L 8.8011361,7.0847696 7.5174066,5.8010401 5.8210729,7.5360656 7.0854566,8.8004492 5.8857869,9.5485945 Z" fill="#ff0000"/>
+  </symbol>
+  <symbol id="axis-icon-x-translate" viewBox="0 0 10 10">
+    <path d="m 108.7314,101.56052 9e-5,-29.896072 a 3.0551618,3.0551618 30.00032 0 0 -4.58272,-2.645869 l -25.891101,14.94796 a 9.1654527,9.1654527 120.0005 0 0 -4.58279,7.937463 l -2.87e-4,29.896518 a 3.0551169,3.0551169 30.000322 0 0 4.582671,2.64584 l 25.891397,-14.94834 a 9.1654521,9.1654521 120.00014 0 0 4.58274,-7.9375 z" fill="#999999" transform="matrix(0.09030857,0,0,0.09928083,-1.3216095,-3.3476837)"/>
+    <path d="m 31.269457,101.5629 -9.6e-5,-29.896069 a 3.0551618,3.0551618 149.99968 0 1 4.582722,-2.645869 l 25.891102,14.94796 a 9.1654504,9.1654504 59.999503 0 1 4.582789,7.937463 l 2.8e-4,29.896515 a 3.0551173,3.0551173 149.99969 0 1 -4.582672,2.64584 L 35.852196,109.5004 a 9.1654533,9.1654533 59.999865 0 1 -4.582739,-7.9375 z" fill="#1a1a1a" transform="matrix(0.09030857,0,0,0.09928083,-1.3216095,-3.3476837)"/>
+    <path d="M 65.417133,42.415484 39.526329,57.363438 c -2.036772,1.175923 -2.036788,4.115743 -2.9e-5,5.291688 l 25.890862,14.94837 c 2.835783,1.63727 6.329628,1.637301 9.16544,8e-5 L 100.4739,62.655563 c 2.03677,-1.1759 2.03678,-4.115706 3e-5,-5.291629 L 74.582573,42.415505 c -1.417897,-0.818626 -3.000307,-1.227941 -4.582717,-1.227945 -1.582411,-3e-6 -3.164822,0.409305 -4.582723,1.227924 z" fill="#e6e6e6" transform="matrix(0.09030857,0,0,0.09928083,-1.3216095,-3.3476837)"/>
+    <path d="M 1.2,5 2.8056,3.4523 V 4.3546 H 7.1944 V 3.4523 L 8.8,5 7.1944,6.5477 V 5.6454 H 2.8056 V 6.5477 Z" fill="#ff0000"/>
+  </symbol>
+  <symbol id="axis-icon-z-translate" viewBox="0 0 10 10">
+    <path d="m 108.7314,101.56052 9e-5,-29.896072 a 3.0551618,3.0551618 30.00032 0 0 -4.58272,-2.645869 l -25.891101,14.94796 a 9.1654527,9.1654527 120.0005 0 0 -4.58279,7.937463 l -2.87e-4,29.896518 a 3.0551169,3.0551169 30.000322 0 0 4.582671,2.64584 l 25.891397,-14.94834 a 9.1654521,9.1654521 120.00014 0 0 4.58274,-7.9375 z" fill="#999999" transform="matrix(0.09030857,0,0,0.09928083,-1.3216095,-3.3476837)"/>
+    <path d="m 31.269457,101.5629 -9.6e-5,-29.896069 a 3.0551618,3.0551618 149.99968 0 1 4.582722,-2.645869 l 25.891102,14.94796 a 9.1654504,9.1654504 59.999503 0 1 4.582789,7.937463 l 2.8e-4,29.896515 a 3.0551173,3.0551173 149.99969 0 1 -4.582672,2.64584 L 35.852196,109.5004 a 9.1654533,9.1654533 59.999865 0 1 -4.582739,-7.9375 z" fill="#1a1a1a" transform="matrix(0.09030857,0,0,0.09928083,-1.3216095,-3.3476837)"/>
+    <path d="M 65.417133,42.415484 39.526329,57.363438 c -2.036772,1.175923 -2.036788,4.115743 -2.9e-5,5.291688 l 25.890862,14.94837 c 2.835783,1.63727 6.329628,1.637301 9.16544,8e-5 L 100.4739,62.655563 c 2.03677,-1.1759 2.03678,-4.115706 3e-5,-5.291629 L 74.582573,42.415505 c -1.417897,-0.818626 -3.000307,-1.227941 -4.582717,-1.227945 -1.582411,-3e-6 -3.164822,0.409305 -4.582723,1.227924 z" fill="#e6e6e6" transform="matrix(0.09030857,0,0,0.09928083,-1.3216095,-3.3476837)"/>
+    <path d="M 5.0002116,1.8960084 3.4525024,2.622514 H 4.3547729 L 3.8256063,5.6941443 H 1.3358358 L 5.0002116,8.191748 8.6645874,5.6941443 H 6.1748169 L 5.6456502,2.622514 h 0.9022705 z" fill="#0000ff"/>
+  </symbol>
+  <symbol id="axis-icon-y-translate" viewBox="0 0 10 10">
+    <path d="m 108.7314,101.56052 9e-5,-29.896072 a 3.0551618,3.0551618 30.00032 0 0 -4.58272,-2.645869 l -25.891101,14.94796 a 9.1654527,9.1654527 120.0005 0 0 -4.58279,7.937463 l -2.87e-4,29.896518 a 3.0551169,3.0551169 30.000322 0 0 4.582671,2.64584 l 25.891397,-14.94834 a 9.1654521,9.1654521 120.00014 0 0 4.58274,-7.9375 z" fill="#999999" transform="matrix(0.09030857,0,0,0.09928083,-1.3216095,-3.3476837)"/>
+    <path d="m 31.269457,101.5629 -9.6e-5,-29.896069 a 3.0551618,3.0551618 149.99968 0 1 4.582722,-2.645869 l 25.891102,14.94796 a 9.1654504,9.1654504 59.999503 0 1 4.582789,7.937463 l 2.8e-4,29.896515 a 3.0551173,3.0551173 149.99969 0 1 -4.582672,2.64584 L 35.852196,109.5004 a 9.1654533,9.1654533 59.999865 0 1 -4.582739,-7.9375 z" fill="#1a1a1a" transform="matrix(0.09030857,0,0,0.09928083,-1.3216095,-3.3476837)"/>
+    <path d="M 65.417133,42.415484 39.526329,57.363438 c -2.036772,1.175923 -2.036788,4.115743 -2.9e-5,5.291688 l 25.890862,14.94837 c 2.835783,1.63727 6.329628,1.637301 9.16544,8e-5 L 100.4739,62.655563 c 2.03677,-1.1759 2.03678,-4.115706 3e-5,-5.291629 L 74.582573,42.415505 c -1.417897,-0.818626 -3.000307,-1.227941 -4.582717,-1.227945 -1.582411,-3e-6 -3.164822,0.409305 -4.582723,1.227924 z" fill="#e6e6e6" transform="matrix(0.09030857,0,0,0.09928083,-1.3216095,-3.3476837)"/>
+    <path d="M 4.9999774,1.2 3.4522682,2.8055868 H 4.3545388 V 7.1148844 H 3.4522682 L 4.9999774,8.7209882 6.5471697,7.1148844 H 5.6448993 V 2.8055868 h 0.9022704 z" fill="#00ff00"/>
+  </symbol>
+  <symbol id="axis-icon-x" viewBox="0 0 10 10">
+    <path d="m 108.7314,101.56052 9e-5,-29.896072 a 3.0551618,3.0551618 30.00032 0 0 -4.58272,-2.645869 l -25.891101,14.94796 a 9.1654527,9.1654527 120.0005 0 0 -4.58279,7.937463 l -2.87e-4,29.896518 a 3.0551169,3.0551169 30.000322 0 0 4.582671,2.64584 l 25.891397,-14.94834 a 9.1654521,9.1654521 120.00014 0 0 4.58274,-7.9375 z" fill="#999999" transform="matrix(0.09030857,0,0,0.09928083,-1.3216095,-3.3476837)"/>
+    <path d="m 31.269457,101.5629 -9.6e-5,-29.896069 a 3.0551618,3.0551618 149.99968 0 1 4.582722,-2.645869 l 25.891102,14.94796 a 9.1654504,9.1654504 59.999503 0 1 4.582789,7.937463 l 2.8e-4,29.896515 a 3.0551173,3.0551173 149.99969 0 1 -4.582672,2.64584 L 35.852196,109.5004 a 9.1654533,9.1654533 59.999865 0 1 -4.582739,-7.9375 z" fill="#1a1a1a" transform="matrix(0.09030857,0,0,0.09928083,-1.3216095,-3.3476837)"/>
+    <path d="M 65.417133,42.415484 39.526329,57.363438 a 3.0551619,3.0551619 90.000316 0 0 -2.9e-5,5.291688 l 25.890862,14.94837 a 9.1654538,9.1654538 5.0263966e-4 0 0 9.16544,8e-5 L 100.4739,62.655563 a 3.0551161,3.0551161 90.000317 0 0 3e-5,-5.291629 L 74.582573,42.415505 a 9.1654533,9.1654533 1.31093e-4 0 0 -9.16544,-2.1e-5 z" fill="#e6e6e6" transform="matrix(0.09030857,0,0,0.09928083,-1.3216095,-3.3476837)"/>
+    <path d="M 4.3127935,0.11087095 C 4.0673259,0.03716055 3.8169921,-5.6193627e-6 3.5659585,0 1.5965314,1.8080637e-5 6.5e-6,2.2385873 0,5.0000001 c 6.5e-6,2.761412 1.5965314,4.9999803 3.5659585,4.9999993 0.2510336,4.6e-6 0.5013674,-0.037154 0.746835,-0.1108689 L 3.8466786,8.9503793 c -0.09322,0.015991 -0.1869332,0.024003 -0.2807201,0.024009 -1.4131577,3.9e-6 -2.5587461,-1.7793925 -2.5587437,-3.9743879 -2.4e-6,-2.1949967 1.1455867,-3.974393 2.5587437,-3.97439 0.093786,-8.7e-6 0.1875001,0.00799 0.2807201,0.023964 L 4.0797363,0.58022045 Z" fill="#ff0000"/>
+  </symbol>
+  <symbol id="axis-icon-y" viewBox="0 0 10 10">
+    <path d="m 108.7314,101.56052 9e-5,-29.896072 a 3.0551618,3.0551618 30.00032 0 0 -4.58272,-2.645869 l -25.891101,14.94796 a 9.1654527,9.1654527 120.0005 0 0 -4.58279,7.937463 l -2.87e-4,29.896518 a 3.0551169,3.0551169 30.000322 0 0 4.582671,2.64584 l 25.891397,-14.94834 a 9.1654521,9.1654521 120.00014 0 0 4.58274,-7.9375 z" fill="#999999" transform="matrix(0.09030857,0,0,0.09928083,-1.3216095,-3.3476837)"/>
+    <path d="m 31.269457,101.5629 -9.6e-5,-29.896069 a 3.0551618,3.0551618 149.99968 0 1 4.582722,-2.645869 l 25.891102,14.94796 a 9.1654504,9.1654504 59.999503 0 1 4.582789,7.937463 l 2.8e-4,29.896515 a 3.0551173,3.0551173 149.99969 0 1 -4.582672,2.64584 L 35.852196,109.5004 a 9.1654533,9.1654533 59.999865 0 1 -4.582739,-7.9375 z" fill="#1a1a1a" transform="matrix(0.09030857,0,0,0.09928083,-1.3216095,-3.3476837)"/>
+    <path d="M 65.417133,42.415484 39.526329,57.363438 a 3.0551619,3.0551619 90.000316 0 0 -2.9e-5,5.291688 l 25.890862,14.94837 a 9.1654538,9.1654538 5.0263966e-4 0 0 9.16544,8e-5 L 100.4739,62.655563 a 3.0551161,3.0551161 90.000317 0 0 3e-5,-5.291629 L 74.582573,42.415505 a 9.1654533,9.1654533 1.31093e-4 0 0 -9.16544,-2.1e-5 z" fill="#e6e6e6" transform="matrix(0.09030857,0,0,0.09928083,-1.3216095,-3.3476837)"/>
+    <path d="M 0.11087094,3.954381 C 0.03716054,4.1999213 -4.500263e-6,4.4503286 0,4.7014365 1.8864515e-5,6.6714434 2.2385874,8.2684389 4.9999998,8.2684444 7.7614125,8.2684389 9.9999819,6.6714434 10,4.7014365 10.000005,4.4503286 9.962851,4.1999213 9.8891306,3.954381 L 8.9503799,4.4206333 c 0.015985,0.093248 0.024003,0.1869886 0.024007,0.2808032 3.5e-6,1.4135732 -1.7793923,2.559499 -3.9743888,2.5594976 -2.1949956,1.4e-6 -3.9743917,-1.1459244 -3.9743877,-2.5594976 -8.7e-6,-0.093814 0.00798,-0.1875563 0.023963,-0.2808032 L 0.5802221,4.1875074 Z" fill="#00ff00"/>
+  </symbol>
+  <symbol id="axis-icon-z" viewBox="0 0 10 10">
+    <path d="m 108.7314,101.56052 9e-5,-29.896072 a 3.0551618,3.0551618 30.00032 0 0 -4.58272,-2.645869 l -25.891101,14.94796 a 9.1654527,9.1654527 120.0005 0 0 -4.58279,7.937463 l -2.87e-4,29.896518 a 3.0551169,3.0551169 30.000322 0 0 4.582671,2.64584 l 25.891397,-14.94834 a 9.1654521,9.1654521 120.00014 0 0 4.58274,-7.9375 z" fill="#999999" transform="matrix(0.09030857,0,0,0.09928083,-1.3216095,-3.3476837)"/>
+    <path d="m 31.269457,101.5629 -9.6e-5,-29.896069 a 3.0551618,3.0551618 149.99968 0 1 4.582722,-2.645869 l 25.891102,14.94796 a 9.1654504,9.1654504 59.999503 0 1 4.582789,7.937463 l 2.8e-4,29.896515 a 3.0551173,3.0551173 149.99969 0 1 -4.582672,2.64584 L 35.852196,109.5004 a 9.1654533,9.1654533 59.999865 0 1 -4.582739,-7.9375 z" fill="#1a1a1a" transform="matrix(0.09030857,0,0,0.09928083,-1.3216095,-3.3476837)"/>
+    <path d="M 65.417133,42.415484 39.526329,57.363438 a 3.0551619,3.0551619 90.000316 0 0 -2.9e-5,5.291688 l 25.890862,14.94837 a 9.1654538,9.1654538 5.0263966e-4 0 0 9.16544,8e-5 L 100.4739,62.655563 a 3.0551161,3.0551161 90.000317 0 0 3e-5,-5.291629 L 74.582573,42.415505 a 9.1654533,9.1654533 1.31093e-4 0 0 -9.16544,-2.1e-5 z" fill="#e6e6e6" transform="matrix(0.09030857,0,0,0.09928083,-1.3216095,-3.3476837)"/>
+    <path d="M 5.6872071,9.8891282 C 5.932675,9.9628383 6.1830092,10.000005 6.4340421,9.999999 8.4034701,9.9999811 9.9999937,7.761411 10,5.0000001 9.9999937,2.2385877 8.4034701,1.8065014e-5 6.4340421,0 6.1830092,-5.5103894e-6 5.932675,0.03715497 5.6872071,0.11086984 L 6.1533226,1.0496204 c 0.09322,-0.015991 0.186933,-0.024003 0.2807195,-0.024008 1.4131578,-3.4e-6 2.558747,1.7793929 2.5587445,3.9743889 2.5e-6,2.1949944 -1.1455877,3.9743918 -2.5587445,3.9743879 -0.093785,9.3e-6 -0.1874996,-0.00799 -0.2807195,-0.023964 L 5.9202652,9.4197776 Z" fill="#0000ff"/>
+  </symbol>
+  <symbol id="camera-translate-icon" viewBox="0 0 10 10">
+    <path style="fill:#e6e6e6;stroke:#000000;stroke-width:0.379757" d="M 6.3449859,4.1808513 8.3386101,3.2358468 a 0.08369342,0.08369342 32.319212 0 1 0.1195418,0.075627 V 6.4001867 A 0.08369342,0.08369342 147.68079 0 1 8.3386101,6.475814 L 6.3449859,5.5308095 A 0.20910944,0.20910944 57.680788 0 1 6.2254441,5.3418534 l 0,-0.972046 A 0.20910944,0.20910944 122.31921 0 1 6.3449859,4.1808513 Z" transform="matrix(0.92570089,0,0,0.86508458,1.520878,0.79421788)"/>
+    <path d="m 1.9544669,2.8499239 h 5.858477 c 0.2922507,0 -0.5291667,0.7660826 -0.5291667,1.0583333 v 2.6355577 c 0,0.2922507 -0.2369159,0.5291667 -0.5291666,0.5291667 H 1.9544669 c -0.2922507,0 -0.5291667,-0.236916 -0.5291667,-0.5291667 V 3.3790906 c 0,-0.2922507 0.236916,-0.5291667 0.5291667,-0.5291667 z" style="fill:#999999;stroke:#000000;stroke-width:0.379757;stroke-dasharray:none"/>
+    <path style="fill:#4d4d4d;stroke:#000000;stroke-width:0.379757" d="m 2.0670918,3.9082569 1.1348818,0 A 0.16999082,0.16999082 57.279863 0 1 3.3565851,4.148903 L 2.822112,5.3184646 A 0.41181246,0.41181246 147.27986 0 1 2.4475569,5.5591107 H 2.0670918 A 0.26458333,0.26458333 45 0 1 1.8025085,5.2945274 l 0,-1.1216872 A 0.26458333,0.26458333 135 0 1 2.0670918,3.9082569 Z" transform="translate(0.41654174,0.74041084)"/>
+    <path style="display:inline;fill:#00ff00;stroke:none;stroke-width:0.493889;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none" d="M 4.9999774,1.2 3.4522682,2.8055868 H 4.3545388 V 7.1148844 H 3.4522682 L 4.9999774,8.7209882 6.5471697,7.1148844 H 5.6448993 V 2.8055868 h 0.9022704 z"/>
+    <circle style="fill:#ff0000;stroke:#ff0000;stroke-width:0.00758711;stroke-dasharray:none" cx="6.458468" cy="3.7331846" r="0.36756283"/>
+  </symbol>
+  <symbol id="camera-fov-icon" viewBox="0 0 10 10">
+    <path
+      d="M 7.1016374,1.2246092 6.5642025,3.3888182 7.3114437,2.95732 C 7.8334612,3.4975463 8.12681,4.2305466 8.1268978,4.9949217 8.12681,5.7592968 7.8334612,6.4922972 7.3114437,7.0325235 L 6.5642025,6.6010253 7.1016374,8.7652342 9.2441422,8.1482176 8.4627946,7.6970824 C 9.0716696,6.9505499 9.3486957,5.9722342 9.3505957,4.9949217 9.3486989,4.0176092 9.0716696,3.0392936 8.4627946,2.2927611 L 9.2441422,1.8416258 Z"
+      fill="#00ff00"/>
+    <path
+      d="M 5.9293013,3.8947884 0.63049406,4.9279838 5.9293013,6.1994877"
+      fill="none"
+      stroke="#e6e6e6"
+      stroke-width="0.25"
+      stroke-linecap="round"
+      stroke-dasharray="0,0.45"/>
+    <path
+      d="M 6.3068311,1.1911404 0.63049406,4.9279838 6.3068311,8.7317652"
+      fill="none"
+      stroke="#999999"
+      stroke-width="0.5"
+      stroke-linecap="round"/>
+  </symbol>
+<symbol id="camera-tilt-icon" viewBox="0 0 10 10">
+  <path style="fill:none;stroke:#b3b3b3;stroke-width:0.379757;fill-opacity:0.11082474;stroke-opacity:0.43556702" d="M 0.14873445 2.4803813 C -0.0033225177 2.590307 -0.10303772 2.7770626 -0.10303769 2.9882058 L -0.10325995 6.6458723 C -0.10326009 6.9837011 0.15263486 7.2584176 0.46834242 7.2584175 L 5.6537613 7.2579633 C 5.9694687 7.2579634 6.2254698 6.9846475 6.2254698 6.6468185 L 6.225651 3.5993216 C 6.2256511 3.2614927 7.1128821 2.3759432 6.7971745 2.3759431 L 0.46819458 2.3762837 C 0.3498043 2.3762837 0.23996863 2.4144258 0.14873445 2.4803813 z M 6.7472202 4.0335864 C 6.7182892 4.0571934 6.6863884 4.0855631 6.6495174 4.1199141 C 6.5960644 4.1697144 6.5400469 4.2313516 6.5227939 4.2554976 C 6.4803277 4.3149319 6.4271406 4.4052288 6.4035556 4.4558458 C 6.3727026 4.5220632 6.3341017 4.6213887 6.3202987 4.6776277 C 6.3029202 4.7484365 6.3042217 4.8679131 6.3459201 5.0686356 C 6.3663938 5.1379202 6.4061531 5.2424968 6.4355524 5.3013757 C 6.4681716 5.3667029 6.5343448 5.4642382 6.5802198 5.5188431 C 6.6271975 5.5747602 6.7076634 5.650659 6.7577418 5.6899219 C 6.8152215 5.7349876 6.8721558 5.7722369 6.8811758 5.7778083 C 6.9433269 5.8161972 7.0386743 5.8648652 7.0921247 5.8898719 C 7.1583003 5.9208322 7.2601852 5.9642003 7.3190777 5.9873733 C 7.3870629 6.0141241 7.4762188 6.0452512 7.518039 6.0578354 C 7.5879894 6.0788844 7.6969041 6.102383 7.76051 6.1077746 C 7.833248 6.1139403 7.945701 6.1055991 8.0082962 6.0884141 C 8.0786223 6.0691065 8.1803838 6.0133326 8.2295961 5.9664967 C 8.2824126 5.916239 8.3419129 5.8200488 8.3657429 5.7598428 C 8.3926119 5.6919587 8.41411 5.5957166 8.42147 5.5473726 C 8.432461 5.4751546 8.4413002 5.35636 8.4476802 5.1511193 C 8.4490002 5.0780689 8.4498205 4.9896988 8.4503011 4.9536798 C 8.4512811 4.8806236 8.4529846 4.7683249 8.4533067 4.7026249 C 8.4536667 4.6295635 8.4528316 4.517722 8.4510016 4.453073 C 8.4489346 4.3800426 8.4432873 4.2854045 8.4387873 4.2415915 L 8.4209356 4.1107494 C 8.4041256 4.0396762 8.3848792 3.966422 8.3768192 3.947211 C 8.3484939 3.8797054 8.2859393 3.7791206 8.125732 3.6543704 C 8.0623197 3.6262244 7.9488136 3.5985014 7.8760696 3.5994743 C 7.8407131 3.5999433 7.800116 3.6023835 7.753141 3.6090335 C 7.6808198 3.6192715 7.6026403 3.6408887 7.5777123 3.6498687 C 7.5089723 3.6746247 7.3980982 3.7167354 7.3291712 3.7408864 C 7.2936947 3.7533174 7.2529928 3.7671319 7.2052758 3.7844649 C 7.1366039 3.8094093 7.0297293 3.8557909 6.9684383 3.8894989 C 6.9044263 3.9247027 6.8037702 3.9874434 6.7472202 4.0335864 z " transform="matrix(0.49756169,0.32621874,-0.30485744,0.46498059,3.392587,3.1229515)"/>
+  <path style="fill:none;stroke:#b3b3b3;stroke-width:0.379757;fill-opacity:0.42525774;stroke-opacity:0.4974227" d="m 2.0670918,3.9082569 1.1348818,0 A 0.16999082,0.16999082 57.279863 0 1 3.3565851,4.148903 L 2.822112,5.3184646 A 0.41181246,0.41181246 147.27986 0 1 2.4475569,5.5591107 H 2.0670918 A 0.26458333,0.26458333 45 0 1 1.8025085,5.2945274 l 0,-1.1216872 A 0.26458333,0.26458333 135 0 1 2.0670918,3.9082569 Z" transform="matrix(0.53749726,0.35240189,-0.35240189,0.53749726,2.8179709,2.7048602)"/>
+  <circle style="fill:#ff9898;fill-opacity:0.50773197;stroke:none;stroke-width:0.0048764;stroke-dasharray:none" cx="7.7229633" cy="2.640465" r="0.23624039" transform="rotate(33.250242)"/>
+  <path style="display:inline;fill:#00ff00;stroke:none;stroke-width:0.493889;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none" d="M 7.1016374,1.2246092 6.5642025,3.3888182 7.3114437,2.95732 C 7.8334612,3.4975463 8.12681,4.2305466 8.1268978,4.9949217 8.12681,5.7592968 7.8334612,6.4922972 7.3114437,7.0325235 L 6.5642025,6.6010253 7.1016374,8.7652342 9.2441422,8.1482176 8.4627946,7.6970824 C 9.0716696,6.9505499 9.3486957,5.9722342 9.3505957,4.9949217 9.3486989,4.0176092 9.0716696,3.0392936 8.4627946,2.2927611 L 9.2441422,1.8416258 Z"/>
+  <g transform="rotate(-48.279164,2.2308831,4.3470381)">
+    <path style="fill:#e6e6e6;stroke:#000000;stroke-width:0.379757" d="m 7.1302426,3.7944005 c 0.041798,-0.01842 0.13049,-0.055836 0.1982184,-0.083239 0.061977,-0.025076 0.168037,-0.065476 0.236627,-0.090894 0.0035,-0.0013 0.064353,-0.014323 0.136155,-0.027835 0.047833,-0.009 0.086347,-0.015692 0.1181718,-0.020662 0.072134,-0.011265 0.1917885,-0.013247 0.2614957,0.00777 0.068589,0.020676 0.1683043,0.085904 0.2129314,0.1434675 0.02425,0.03128 0.070325,0.1073633 0.096686,0.1715923 0.047218,0.1989679 0.055209,0.3169625 0.056986,0.3899976 0.00167,0.068819 0.00123,0.1838615 6.282e-4,0.2569216 -3.804e-4,0.046067 -0.00105,0.1426382 -9.315e-4,0.2157006 1.141e-4,0.067575 0.00144,0.1815749 0.00272,0.2546263 0.00109,0.062033 0.00318,0.171537 0.00366,0.2445978 2.226e-4,0.03391 2.885e-4,0.1206522 -0.00256,0.1936558 -3.81e-4,0.00978 -0.00368,0.076919 -0.012302,0.1494597 -0.00618,0.05202 -0.025088,0.1524095 -0.051058,0.2206179 -0.023134,0.060759 -0.080078,0.1584031 -0.1283062,0.2132616 -0.00155,0.00176 -0.051798,0.036989 -0.1171151,0.069633 -0.042489,0.021235 -0.080587,0.036127 -0.1145296,0.046301 -0.069465,0.020822 -0.1892923,0.016084 -0.260897,0.00187 C 7.7078826,6.1395445 7.6046737,6.1073498 7.5364565,6.0812142 7.4816096,6.0602011 7.3833315,6.0182414 7.3166415,5.9884006 7.2633295,5.9645458 7.1664071,5.9202193 7.1003486,5.8890042 7.0479268,5.8642329 6.9526656,5.817144 6.8888019,5.7816638 6.8387557,5.75386 6.7491989,5.6975988 6.6909348,5.653543 6.6454548,5.6191537 6.5667164,5.5486612 6.5182244,5.4940505 6.4852465,5.4569113 6.426442,5.3762925 6.3915041,5.3121697 6.3691866,5.2712094 6.3313935,5.1815133 6.3119471,5.111129 6.2970299,5.0571371 6.280167,4.9535689 6.2771564,4.8806027 c -0.00227,-0.054957 0.00376,-0.1588819 0.01675,-0.2307444 0.010782,-0.059649 0.042069,-0.1637579 0.072091,-0.2303257 0.018679,-0.041416 0.066793,-0.1248626 0.1110781,-0.1829245 0.030055,-0.039404 0.098946,-0.1112264 0.1541221,-0.1591544 0.01944,-0.016887 0.084478,-0.063475 0.1450147,-0.1043544 l 0.1150382,-0.065292 0.1185149,-0.058766 z" transform="matrix(0.59496748,0,0,0.5560081,1.2599293,2.3644122)"/>
+    <path d="m 1.538606,3.6856578 h 3.7653667 c 0.1878357,0 -0.3401066,0.4923774 -0.3401066,0.6802131 v 1.6939286 c 0,0.1878356 -0.1522708,0.3401066 -0.3401065,0.3401066 H 1.538606 c -0.1878357,0 -0.3401066,-0.152271 -0.3401066,-0.3401066 V 4.0257644 c 0,-0.1878357 0.1522709,-0.3401066 0.3401066,-0.3401066 z" style="fill:#999999;stroke:#000000;stroke-width:0.244078;stroke-dasharray:none"/>
+    <path style="fill:#4d4d4d;stroke:#000000;stroke-width:0.379757" d="m 2.0670918,3.9082569 1.1348818,0 A 0.16999082,0.16999082 57.279863 0 1 3.3565851,4.148903 L 2.822112,5.3184646 A 0.41181246,0.41181246 147.27986 0 1 2.4475569,5.5591107 H 2.0670918 A 0.26458333,0.26458333 45 0 1 1.8025085,5.2945274 l 0,-1.1216872 A 0.26458333,0.26458333 135 0 1 2.0670918,3.9082569 Z" transform="matrix(0.64272109,0,0,0.64272109,0.55014905,2.3298293)"/>
+    <circle style="fill:#ff0000;stroke:#ff0000;stroke-width:0.0048764;stroke-dasharray:none" cx="4.4334226" cy="4.2533479" r="0.23624039"/>
+  </g>
+</symbol>
+</svg>
+<main class="app">
   <div class="workspace">
     <section class="stage-wrap">
       <div class="canvas-shell">
         <canvas id="view" aria-label="Interactive three-point perspective cube"></canvas>
+
+        <section id="canvasElementsPanel" class="canvas-elements-panel" aria-label="Canvas element visibility">
+          <button id="canvasElementsToggle" class="canvas-elements-toggle" type="button" aria-controls="canvasElementsBody" aria-expanded="true" aria-label="Collapse Elements">
+            <span id="canvasElementsArrow" class="canvas-elements-arrow" aria-hidden="true"></span>
+            <span>Elements</span>
+          </button>
+          <div id="canvasElementsBody" class="canvas-elements-body">
+            <table class="canvas-elements-table">
+              <tbody>
+                <tr><td><label for="showCube">Cube</label></td><td><input id="showCube" type="checkbox" checked></td></tr>
+                <tr><td><label for="showCubeAxes">Local cube axes</label></td><td><input id="showCubeAxes" type="checkbox" checked></td></tr>
+                <tr><td><label for="showGuidelines">X/Y/Z guidelines</label></td><td><input id="showGuidelines" type="checkbox" checked></td></tr>
+                <tr><td><label for="showVanishingPoints">Vanishing points</label></td><td><input id="showVanishingPoints" type="checkbox" checked></td></tr>
+                <tr><td><label for="showGroundPlane">Ground plane</label></td><td><input id="showGroundPlane" type="checkbox" checked></td></tr>
+                <tr><td><label for="showGroundGrid">Ground grid</label></td><td><input id="showGroundGrid" type="checkbox" checked></td></tr>
+                <tr><td><label for="showHorizon">Horizon</label></td><td><input id="showHorizon" type="checkbox" checked></td></tr>
+                <tr><td><label for="showFrameGrid">Frame grid</label></td><td><input id="showFrameGrid" type="checkbox" checked></td></tr>
+                <tr><td><label for="showProjectionBoundary">Projection boundary</label></td><td><input id="showProjectionBoundary" type="checkbox" checked></td></tr>
+              </tbody>
+            </table>
+            <button id="exportPng" class="export-png-button" type="button">Export PNG · 2000×2000</button>
+          </div>
+        </section>
+
+        <button id="legendPanelToggle" class="panel-toggle legend-panel-toggle" type="button" aria-expanded="true" aria-label="Collapse canvas legend" title="Collapse canvas legend">▾</button>
       </div>
 
-      <div class="vp-readout" aria-live="polite">
-        <div class="vp red">
-          <strong>Red vanishing point · local X</strong>
-          <span id="vpX">—</span>
-        </div>
-        <div class="vp green">
-          <strong>Green vanishing point · local Y</strong>
-          <span id="vpY">—</span>
-        </div>
-        <div class="vp blue">
-          <strong>Blue vanishing point · local Z</strong>
-          <span id="vpZ">—</span>
-        </div>
-      </div>
     </section>
 
-    <aside class="controls" aria-label="Perspective controls">
+    <aside id="sidePanel" class="controls" aria-label="Perspective controls">
+      <button id="sidePanelToggle" class="panel-toggle side-panel-toggle" type="button" aria-controls="sidePanel" aria-expanded="true" aria-label="Collapse control panel" title="Collapse control panel">›</button>
       <section class="control-group" aria-labelledby="cubeControlsTitle">
         <h2 class="control-group-title" id="cubeControlsTitle">Cube controls</h2>
 
-        <div class="control">
-          <div class="control-row">
-            <label for="cubeSize">Cube size</label>
-            <output id="cubeSizeOut"></output>
-          </div>
-          <input id="cubeSize" type="range" min="0.25" max="10" step="0.05" value="1" data-default="1">
+        <div class="control icon-control">
+          <label for="cubeSize" class="axis-label" title="Cube size">
+            <svg aria-hidden="true" focusable="false"><use href="#cube-size-icon"></use></svg>
+            <span class="sr-only">Cube size</span>
+          </label>
+          <input id="cubeSize" type="range" min="0.25" max="10" step="0.05" value="2" data-default="2" aria-label="Cube size">
+          <output id="cubeSizeOut"></output>
         </div>
 
-        <div class="control">
-          <div class="control-row">
-            <label for="cubeY">Move cube up / down</label>
-            <output id="cubeYOut"></output>
-          </div>
-          <input id="cubeY" type="range" min="-3" max="3" step="0.05" value="0" data-default="0">
+        <div class="control icon-control">
+          <label for="cubeX" class="axis-label" title="Move cube along its local X axis">
+            <svg aria-hidden="true" focusable="false"><use href="#axis-icon-x-translate"></use></svg>
+            <span class="sr-only">Move cube along its local X axis</span>
+          </label>
+          <input id="cubeX" type="range" min="-10" max="10" step="0.05" value="0" data-default="0" aria-label="Move cube along its local X axis">
+          <output id="cubeXOut"></output>
         </div>
 
-        <div class="control">
-          <div class="control-row">
-            <label for="cubeDepth">Move cube closer / farther</label>
-            <output id="cubeDepthOut"></output>
-          </div>
-          <input id="cubeDepth" type="range" min="-4" max="4" step="0.05" value="0" data-default="0">
+        <div class="control icon-control">
+          <label for="cubeY" class="axis-label" title="Move cube along its local Y axis">
+            <svg aria-hidden="true" focusable="false"><use href="#axis-icon-y-translate"></use></svg>
+            <span class="sr-only">Move cube along its local Y axis</span>
+          </label>
+          <input id="cubeY" type="range" min="-10" max="10" step="0.05" value="1" data-default="1" aria-label="Move cube along its local Y axis">
+          <output id="cubeYOut"></output>
         </div>
 
-        <div class="control">
-          <div class="control-row">
-            <label for="yaw">Cube yaw</label>
-            <output id="yawOut"></output>
-          </div>
-          <input id="yaw" type="range" min="-45" max="45" step="1" value="0" data-default="0">
+        <div class="control icon-control">
+          <label for="cubeDepth" class="axis-label" title="Move cube along its local Z axis">
+            <svg aria-hidden="true" focusable="false"><use href="#axis-icon-z-translate"></use></svg>
+            <span class="sr-only">Move cube along its local Z axis</span>
+          </label>
+          <input id="cubeDepth" type="range" min="-10" max="10" step="0.05" value="0" data-default="0" aria-label="Move cube along its local Z axis">
+          <output id="cubeDepthOut"></output>
         </div>
 
-        <div class="control">
-          <div class="control-row">
-            <label for="roll">Cube roll</label>
-            <output id="rollOut"></output>
-          </div>
-          <input id="roll" type="range" min="-45" max="45" step="1" value="0" data-default="0">
+        <div class="control icon-control">
+          <label for="pitch" class="axis-label" title="X-Rotation">
+            <svg aria-hidden="true" focusable="false"><use href="#axis-icon-x"></use></svg>
+            <span class="sr-only">X-Rotation</span>
+          </label>
+          <input id="pitch" type="range" min="-90" max="90" step="1" value="0" data-default="0" aria-label="X-Rotation">
+          <output id="pitchOut"></output>
         </div>
 
-        <div class="control">
-          <div class="control-row">
-            <label for="pitch">Cube pitch</label>
-            <output id="pitchOut"></output>
-          </div>
-          <input id="pitch" type="range" min="-45" max="45" step="1" value="0" data-default="0">
+        <div class="control icon-control">
+          <label for="yaw" class="axis-label" title="Z-Rotation">
+            <svg aria-hidden="true" focusable="false"><use href="#axis-icon-y"></use></svg>
+            <span class="sr-only">Z-Rotation</span>
+          </label>
+          <input id="yaw" type="range" min="-90" max="90" step="1" value="30" data-default="30" aria-label="Z-Rotation">
+          <output id="yawOut"></output>
+        </div>
+
+        <div class="control icon-control">
+          <label for="roll" class="axis-label" title="Y-Rotation">
+            <svg aria-hidden="true" focusable="false"><use href="#axis-icon-z"></use></svg>
+            <span class="sr-only">Y-Rotation</span>
+          </label>
+          <input id="roll" type="range" min="-90" max="90" step="1" value="0" data-default="0" aria-label="Y-Rotation">
+          <output id="rollOut"></output>
         </div>
       </section>
 
       <section class="control-group" aria-labelledby="cameraControlsTitle">
         <h2 class="control-group-title" id="cameraControlsTitle">Camera controls</h2>
 
-        <div class="control">
-          <div class="control-row">
-            <label for="fov">Field of view · size compensated</label>
-            <output id="fovOut"></output>
-          </div>
-          <input id="fov" type="range" min="25" max="100" step="1" value="52" data-default="52">
+        <div class="control icon-control">
+          <label for="fov" class="axis-label" title="Diagonal field of view">
+            <svg aria-hidden="true" focusable="false"><use href="#camera-fov-icon"></use></svg>
+            <span class="sr-only">Diagonal field of view</span>
+          </label>
+          <input id="fov" type="range" min="0" max="130" step="1" value="60" data-default="60" autocomplete="off" aria-label="Diagonal field of view">
+          <output id="fovOut"></output>
+        </div>
+        <div class="control icon-control">
+          <label for="cameraHeight" class="axis-label" title="Move camera along global Y axis">
+            <svg aria-hidden="true" focusable="false"><use href="#camera-translate-icon"></use></svg>
+            <span class="sr-only">Move camera along global Y axis</span>
+          </label>
+          <input id="cameraHeight" type="range" min="-10" max="10" step="0.05" value="1" data-default="1" aria-label="Move camera along global Y axis">
+          <output id="cameraHeightOut"></output>
         </div>
 
-        <div class="control">
-          <div class="control-row">
-            <label for="cameraHeight">Camera height</label>
-            <output id="cameraHeightOut"></output>
-          </div>
-          <input id="cameraHeight" type="range" min="-4" max="4" step="0.05" value="0" data-default="0">
+        <div class="control icon-control">
+          <label for="cameraPitch" class="axis-label" title="Camera tilt in the global Y-Z plane">
+            <svg aria-hidden="true" focusable="false"><use href="#camera-tilt-icon"></use></svg>
+            <span class="sr-only">Camera tilt in the global Y-Z plane</span>
+          </label>
+          <input id="cameraPitch" type="range" min="-89.9" max="89.9" step="0.1" value="0" data-default="0" aria-label="Camera tilt in the global Y-Z plane">
+          <output id="cameraPitchOut"></output>
         </div>
 
-        <div class="control">
-          <div class="control-row">
-            <label for="cameraPitch">Camera pitch</label>
-            <output id="cameraPitchOut"></output>
-          </div>
-          <input id="cameraPitch" type="range" min="-45" max="45" step="1" value="0" data-default="0">
-        </div>
-
-        <div class="control toggle-control">
-          <label for="fisheye">5/6-point fisheye · 180°</label>
-          <input id="fisheye" type="checkbox" data-default="false">
-        </div>
-
-        <div class="control toggle-control">
-          <label for="guidelines">Guidelines</label>
-          <input id="guidelines" type="checkbox" data-default="false">
+        <div class="control projection-switch" role="group" aria-label="Projection mode">
+          <button id="rectilinearMode" class="projection-button is-active" type="button" aria-pressed="true" title="Rectilinear projection" aria-label="Rectilinear projection">
+            <img src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+CjwhLS0gQ3JlYXRlZCB3aXRoIElua3NjYXBlIChodHRwOi8vd3d3Lmlua3NjYXBlLm9yZy8pIC0tPgoKPHN2ZwogICB3aWR0aD0iMTBtbSIKICAgaGVpZ2h0PSIxMG1tIgogICB2aWV3Qm94PSIwIDAgMTAgMTAiCiAgIHZlcnNpb249IjEuMSIKICAgaWQ9InN2ZzEiCiAgIHNvZGlwb2RpOmRvY25hbWU9IlJlY3RpbGluZWFyLnN2ZyIKICAgaW5rc2NhcGU6dmVyc2lvbj0iMS40LjIgKGViZjBlOTQwLCAyMDI1LTA1LTA4KSIKICAgeG1sbnM6aW5rc2NhcGU9Imh0dHA6Ly93d3cuaW5rc2NhcGUub3JnL25hbWVzcGFjZXMvaW5rc2NhcGUiCiAgIHhtbG5zOnNvZGlwb2RpPSJodHRwOi8vc29kaXBvZGkuc291cmNlZm9yZ2UubmV0L0RURC9zb2RpcG9kaS0wLmR0ZCIKICAgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIgogICB4bWxuczpzdmc9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8c29kaXBvZGk6bmFtZWR2aWV3CiAgICAgaWQ9Im5hbWVkdmlldzEiCiAgICAgcGFnZWNvbG9yPSIjZmZmZmZmIgogICAgIGJvcmRlcmNvbG9yPSIjMDAwMDAwIgogICAgIGJvcmRlcm9wYWNpdHk9IjAuMjUiCiAgICAgaW5rc2NhcGU6c2hvd3BhZ2VzaGFkb3c9IjIiCiAgICAgaW5rc2NhcGU6cGFnZW9wYWNpdHk9IjAuMCIKICAgICBpbmtzY2FwZTpwYWdlY2hlY2tlcmJvYXJkPSIwIgogICAgIGlua3NjYXBlOmRlc2tjb2xvcj0iI2QxZDFkMSIKICAgICBpbmtzY2FwZTpkb2N1bWVudC11bml0cz0ibW0iCiAgICAgaW5rc2NhcGU6em9vbT0iMjAuNDUyOTU5IgogICAgIGlua3NjYXBlOmN4PSIxMS40NDA4ODgiCiAgICAgaW5rc2NhcGU6Y3k9IjE5LjY3OTMwNCIKICAgICBpbmtzY2FwZTp3aW5kb3ctd2lkdGg9IjE5MDQiCiAgICAgaW5rc2NhcGU6d2luZG93LWhlaWdodD0iMTAxMiIKICAgICBpbmtzY2FwZTp3aW5kb3cteD0iOCIKICAgICBpbmtzY2FwZTp3aW5kb3cteT0iMzMiCiAgICAgaW5rc2NhcGU6d2luZG93LW1heGltaXplZD0iMCIKICAgICBpbmtzY2FwZTpjdXJyZW50LWxheWVyPSJzdmcxIgogICAgIHNob3dncmlkPSJmYWxzZSIgLz4KICA8ZGVmcwogICAgIGlkPSJkZWZzMSIgLz4KICA8ZwogICAgIGlkPSJnNDIiPgogICAgPHBhdGgKICAgICAgIHNvZGlwb2RpOnR5cGU9InN0YXIiCiAgICAgICBzdHlsZT0iZmlsbDpub25lO2ZpbGwtb3BhY2l0eToxO3N0cm9rZTojOTk5OTk5O3N0cm9rZS13aWR0aDowLjU7c3Ryb2tlLWxpbmVjYXA6cm91bmQ7c3Ryb2tlLWRhc2hhcnJheTpub25lO3N0cm9rZS1kYXNob2Zmc2V0OjA7c3Ryb2tlLW9wYWNpdHk6MTtwYWludC1vcmRlcjptYXJrZXJzIHN0cm9rZSBmaWxsIgogICAgICAgaWQ9InBhdGg0MiIKICAgICAgIGlua3NjYXBlOmZsYXRzaWRlZD0idHJ1ZSIKICAgICAgIHNvZGlwb2RpOnNpZGVzPSI2IgogICAgICAgc29kaXBvZGk6Y3g9IjAuMzQzMzQyODEiCiAgICAgICBzb2RpcG9kaTpjeT0iMC44NDUxNTE1NCIKICAgICAgIHNvZGlwb2RpOnIxPSIzLjUyMTIxNDUiCiAgICAgICBzb2RpcG9kaTpyMj0iMy4wNDk0NjExIgogICAgICAgc29kaXBvZGk6YXJnMT0iMS4wNDcxOTc2IgogICAgICAgc29kaXBvZGk6YXJnMj0iMS41NzA3OTYzIgogICAgICAgaW5rc2NhcGU6cm91bmRlZD0iMCIKICAgICAgIGlua3NjYXBlOnJhbmRvbWl6ZWQ9IjAiCiAgICAgICBkPSJtIDIuMTAzOTQ5OSwzLjg5NDYxMjggLTMuNTIxMjE0NSwtMTBlLTggLTEuNzYwNjA3MSwtMy4wNDk0NjEzMyAxLjc2MDYwNzQsLTMuMDQ5NDYxMDcgMy41MjEyMTQ1LDEwZS04IDEuNzYwNjA3MSwzLjA0OTQ2MTMyIHoiCiAgICAgICB0cmFuc2Zvcm09Im1hdHJpeCgwLC0xLjA3NTc3LDEuMDc1NzcsMCw0LjA5MDgxMTMsNS4zNjkzNTc5KSIgLz4KICAgIDxwYXRoCiAgICAgICBzdHlsZT0iZmlsbDpub25lO2ZpbGwtb3BhY2l0eTowLjUwNzczMjtzdHJva2U6IzAwZmYwMDtzdHJva2Utd2lkdGg6MC41O3N0cm9rZS1saW5lY2FwOnJvdW5kO3N0cm9rZS1kYXNoYXJyYXk6bm9uZTtzdHJva2UtZGFzaG9mZnNldDowO3N0cm9rZS1vcGFjaXR5OjE7cGFpbnQtb3JkZXI6bWFya2VycyBzdHJva2UgZmlsbCIKICAgICAgIGQ9Ik0gNS4wMDAwMDAxLDEuNDc4Nzg1NCA1LDQuNzE3ODAyNyIKICAgICAgIGlkPSJwYXRoMzYiCiAgICAgICBzb2RpcG9kaTpub2RldHlwZXM9ImNjIiAvPgogICAgPHBhdGgKICAgICAgIHN0eWxlPSJmaWxsOm5vbmU7ZmlsbC1vcGFjaXR5OjAuNTA3NzMyO3N0cm9rZTojMDAwMGZmO3N0cm9rZS13aWR0aDowLjU7c3Ryb2tlLWxpbmVjYXA6cm91bmQ7c3Ryb2tlLWRhc2hhcnJheTpub25lO3N0cm9rZS1kYXNob2Zmc2V0OjA7c3Ryb2tlLW9wYWNpdHk6MTtwYWludC1vcmRlcjptYXJrZXJzIHN0cm9rZSBmaWxsIgogICAgICAgZD0iTSA4LjA0OTQ2MTEsNi43NjA2MDczIDUuMzMwNzAyNiw1LjIzMjgxNjkiCiAgICAgICBpZD0icGF0aDM3IgogICAgICAgc29kaXBvZGk6bm9kZXR5cGVzPSJjYyIgLz4KICAgIDxwYXRoCiAgICAgICBzdHlsZT0iZmlsbDpub25lO2ZpbGwtb3BhY2l0eTowLjUwNzczMjtzdHJva2U6I2ZmMDAwMDtzdHJva2Utd2lkdGg6MC41O3N0cm9rZS1saW5lY2FwOnJvdW5kO3N0cm9rZS1kYXNoYXJyYXk6bm9uZTtzdHJva2UtZGFzaG9mZnNldDowO3N0cm9rZS1vcGFjaXR5OjE7cGFpbnQtb3JkZXI6bWFya2VycyBzdHJva2UgZmlsbCIKICAgICAgIGQ9Ik0gMS45NTA1Mzg3LDYuNzYwNjA3IDQuNjkxMzkxOSw1LjIzMjgxNjkiCiAgICAgICBpZD0icGF0aDM4IgogICAgICAgc29kaXBvZGk6bm9kZXR5cGVzPSJjYyIgLz4KICA8L2c+Cjwvc3ZnPgo=" alt="" aria-hidden="true">
+            <span class="sr-only">Rectilinear</span>
+          </button>
+          <button id="fisheyeMode" class="projection-button is-inactive" type="button" aria-pressed="false" title="5/6-point fisheye projection at 180 degrees" aria-label="5/6-point fisheye projection">
+            <img src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+CjwhLS0gQ3JlYXRlZCB3aXRoIElua3NjYXBlIChodHRwOi8vd3d3Lmlua3NjYXBlLm9yZy8pIC0tPgoKPHN2ZwogICB3aWR0aD0iMTBtbSIKICAgaGVpZ2h0PSIxMG1tIgogICB2aWV3Qm94PSIwIDAgMTAgMTAiCiAgIHZlcnNpb249IjEuMSIKICAgaWQ9InN2ZzEiCiAgIHNvZGlwb2RpOmRvY25hbWU9IkZpc2hleWUuc3ZnIgogICBpbmtzY2FwZTp2ZXJzaW9uPSIxLjQuMiAoZWJmMGU5NDAsIDIwMjUtMDUtMDgpIgogICB4bWxuczppbmtzY2FwZT0iaHR0cDovL3d3dy5pbmtzY2FwZS5vcmcvbmFtZXNwYWNlcy9pbmtzY2FwZSIKICAgeG1sbnM6c29kaXBvZGk9Imh0dHA6Ly9zb2RpcG9kaS5zb3VyY2Vmb3JnZS5uZXQvRFREL3NvZGlwb2RpLTAuZHRkIgogICB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciCiAgIHhtbG5zOnN2Zz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgogIDxzb2RpcG9kaTpuYW1lZHZpZXcKICAgICBpZD0ibmFtZWR2aWV3MSIKICAgICBwYWdlY29sb3I9IiNmZmZmZmYiCiAgICAgYm9yZGVyY29sb3I9IiMwMDAwMDAiCiAgICAgYm9yZGVyb3BhY2l0eT0iMC4yNSIKICAgICBpbmtzY2FwZTpzaG93cGFnZXNoYWRvdz0iMiIKICAgICBpbmtzY2FwZTpwYWdlb3BhY2l0eT0iMC4wIgogICAgIGlua3NjYXBlOnBhZ2VjaGVja2VyYm9hcmQ9IjAiCiAgICAgaW5rc2NhcGU6ZGVza2NvbG9yPSIjZDFkMWQxIgogICAgIGlua3NjYXBlOmRvY3VtZW50LXVuaXRzPSJtbSIKICAgICBpbmtzY2FwZTp6b29tPSIyMi4wOTI3MDgiCiAgICAgaW5rc2NhcGU6Y3g9IjE5LjU5OTIyNyIKICAgICBpbmtzY2FwZTpjeT0iMTguODk3NjM4IgogICAgIGlua3NjYXBlOndpbmRvdy13aWR0aD0iMTkwNCIKICAgICBpbmtzY2FwZTp3aW5kb3ctaGVpZ2h0PSIxMDEyIgogICAgIGlua3NjYXBlOndpbmRvdy14PSIxOTI4IgogICAgIGlua3NjYXBlOndpbmRvdy15PSIzMiIKICAgICBpbmtzY2FwZTp3aW5kb3ctbWF4aW1pemVkPSIwIgogICAgIGlua3NjYXBlOmN1cnJlbnQtbGF5ZXI9InN2ZzEiCiAgICAgc2hvd2dyaWQ9ImZhbHNlIiAvPgogIDxkZWZzCiAgICAgaWQ9ImRlZnMxIiAvPgogIDxjaXJjbGUKICAgICBzdHlsZT0iZGlzcGxheTpub25lO2ZpbGw6bm9uZTtmaWxsLW9wYWNpdHk6MC41MDc3MzI7c3Ryb2tlOiMwMDAwMDA7c3Ryb2tlLXdpZHRoOjAuNTtzdHJva2UtbGluZWNhcDpyb3VuZDtzdHJva2UtZGFzaGFycmF5Om5vbmU7c3Ryb2tlLWRhc2hvZmZzZXQ6MDtzdHJva2Utb3BhY2l0eToxO3BhaW50LW9yZGVyOm1hcmtlcnMgc3Ryb2tlIGZpbGwiCiAgICAgaWQ9InBhdGg3IgogICAgIGN4PSI1IgogICAgIGN5PSI0Ljg5OTI2IgogICAgIHI9IjQuMTk5MDgyOSIgLz4KICA8ZWxsaXBzZQogICAgIHN0eWxlPSJmaWxsOm5vbmU7ZmlsbC1vcGFjaXR5OjE7c3Ryb2tlOiM5OTk5OTk7c3Ryb2tlLXdpZHRoOjAuNTtzdHJva2UtbGluZWNhcDpyb3VuZDtzdHJva2UtZGFzaGFycmF5Om5vbmU7c3Ryb2tlLWRhc2hvZmZzZXQ6MDtzdHJva2Utb3BhY2l0eToxO3BhaW50LW9yZGVyOm1hcmtlcnMgc3Ryb2tlIGZpbGwiCiAgICAgaWQ9InBhdGgxNi0zIgogICAgIGN4PSI1IgogICAgIGN5PSI1IgogICAgIHJ4PSIzLjk5NjE0MTkiCiAgICAgcnk9IjMuOTk0ODU1OSIgLz4KICA8cGF0aAogICAgIGlkPSJwYXRoMTEiCiAgICAgc3R5bGU9ImZpbGw6bm9uZTtmaWxsLW9wYWNpdHk6MC41MDc3MzI7c3Ryb2tlOiNmZjAwMDA7c3Ryb2tlLXdpZHRoOjAuNDQyMzgxO3N0cm9rZS1saW5lY2FwOnJvdW5kO3N0cm9rZS1kYXNoYXJyYXk6bm9uZTtwYWludC1vcmRlcjptYXJrZXJzIHN0cm9rZSBmaWxsIgogICAgIGQ9Ik0gOC42NjAzMTU3LDQuOTk5OTk5OSBDIDguNjYwMzQyMSw0Ljc1NTQ5MzUgOC41NjcwMjU3LDQuNTEwNjQ3NiA4LjM4MzYyMjQsNC4yODQ3NDQ4IDguMjAwMjE4MSw0LjA1ODg0MjEgNy45Mjg3MzkzLDMuODUyMTY2OSA3LjU4OTgxNzEsMy42NzkyNTY3IDcuMjUwODk0OSwzLjUwNjM0NjYgNi44NDQ1NTQ5LDMuMzY3NDE4MiA2LjQwMTcwNDEsMy4yNzM4Mjc1IDUuOTU4ODUzMiwzLjE4MDIzNjcgNS40ODAyMjk2LDMuMTMyMjExNyA1LjAwMDg3MTksMy4xMzIxOTI3IDQuNTIxNTE0MSwzLjEzMjIxMTUgNC4wNDI4OTA1LDMuMTgwMjM3MSAzLjYwMDAzOTUsMy4yNzM4Mjc1IDMuMTU3MTg4NSwzLjM2NzQxODIgMi43NTA4NDgzLDMuNTA2MzQ2NiAyLjQxMTkyNjQsMy42NzkyNTY3IDIuMDczMDA0NCwzLjg1MjE2NjkgMS44MDE1MjUxLDQuMDU4ODQyMSAxLjYxODEyMTQsNC4yODQ3NDQ4IDEuNDM0NzE3OCw0LjUxMDY0NzYgMS4zMzk2NTc5LDQuNzU1NDkzNSAxLjMzOTY4NDMsNC45OTk5OTk5IGMgLTIuNjRlLTUsMC4yNDQ1MDY3IDAuMDk1MDM0LDAuNDg5MzUyNCAwLjI3ODQzNzEsMC43MTUyNTUyIDAuMTgzNDAzNywwLjIyNTkwMjggMC40NTQ4ODMsMC40MzI1Nzc5IDAuNzkzODA1LDAuNjA1NDg4MiAwLjMzODkyMTksMC4xNzI5MTAxIDAuNzQ1MjYyMSwwLjMxMTgzODQgMS4xODgxMTMxLDAuNDA1NDI5MSAwLjQ0Mjg1MSwwLjA5MzU5MSAwLjkyMTQ3NDUsMC4xNDE2MTYxIDEuNDAwODMyNCwwLjE0MTYzNSAwLjQ3OTM1NzcsLTEuOWUtNSAwLjk1Nzk4MTMsLTAuMDQ4MDQ0IDEuNDAwODMyMiwtMC4xNDE2MzUgQyA2Ljg0NDU1NDksNi42MzI1ODE0IDcuMjUwODk0OSw2LjQ5MzY1MzQgNy41ODk4MTcxLDYuMzIwNzQzMyA3LjkyODczOTMsNi4xNDc4MzMgOC4yMDAyMTgxLDUuOTQxMTU3OSA4LjM4MzYyMjQsNS43MTUyNTUxIDguNTY3MDI1Nyw1LjQ4OTM1MjMgOC42NjAzNDIxLDUuMjQ0NTA2NiA4LjY2MDMxNTcsNC45OTk5OTk5IFoiCiAgICAgc29kaXBvZGk6bm9kZXR5cGVzPSJjc3NzY3Nzc2Nzc3Njc3NzYyIgLz4KICA8cGF0aAogICAgIGlkPSJwYXRoMSIKICAgICBzdHlsZT0iZmlsbDpub25lO2ZpbGwtb3BhY2l0eTowLjUwNzczMjtzdHJva2U6IzAwZmYwMDtzdHJva2Utd2lkdGg6MC40NDIzODE7c3Ryb2tlLWxpbmVjYXA6cm91bmQ7c3Ryb2tlLWRhc2hhcnJheTpub25lO3BhaW50LW9yZGVyOm1hcmtlcnMgc3Ryb2tlIGZpbGwiCiAgICAgZD0iTSA0Ljk5OTk5OTksOC42NjAzMTU2IEMgNS4yNDQ1MDYzLDguNjYwMzQyIDUuNDg5MzUyMSw4LjU2NzAyMDcgNS43MTUyNTUsOC4zODM2MjI0IDUuOTQxMTU3Myw4LjIwMDIxODEgNi4xNDc4MzI5LDcuOTI4NzM5MyA2LjMyMDc0MzYsNy41ODk4MTcgNi40OTM2NTM0LDcuMjUwODk1MSA2LjYzMjU4MTUsNi44NDQ1NTQ5IDYuNzI2MTcyNiw2LjQwMTcwMzkgNi44MTk3NjE2LDUuOTU4ODUyOSA2Ljg2Nzc4NzksNS40ODAyMjk2IDYuODY3ODA3NSw1LjAwMDg3MiA2Ljg2Nzc4ODksNC41MjE1MTQgNi44MTk3NjI2LDQuMDQyODkwNSA2LjcyNjE3MjYsMy42MDAwMzk1IDYuNjMyNTgxNSwzLjE1NzE4ODYgNi40OTM2NTM0LDIuNzUwODQ4NCA2LjMyMDc0MzYsMi40MTE5MjY1IDYuMTQ3ODMyOSwyLjA3MzAwNDQgNS45NDExNTczLDEuODAxNTI1MSA1LjcxNTI1NSwxLjYxODEyMTUgNS40ODkzNTIxLDEuNDM0NzE4IDUuMjQ0NTA2MywxLjMzOTY1NzkgNC45OTk5OTk5LDEuMzM5Njg0NCA0Ljc1NTQ5MzMsMS4zMzk2NTc5IDQuNTEwNjQ3NiwxLjQzNDcxOCA0LjI4NDc0NDgsMS42MTgxMjE1IDQuMDU4ODQxOSwxLjgwMTUyNTEgMy44NTIxNjY5LDIuMDczMDA0NCAzLjY3OTI1NjYsMi40MTE5MjY1IDMuNTA2MzQ2NSwyLjc1MDg0ODQgMy4zNjc0MTgxLDMuMTU3MTg4NiAzLjI3MzgyNzQsMy42MDAwMzk1IDMuMTgwMjM2NCw0LjA0Mjg5MDUgMy4xMzIyMTE0LDQuNTIxNTE0IDMuMTMyMTkyNSw1LjAwMDg3MTkgYyAxLjllLTUsMC40NzkzNTc3IDAuMDQ4MDQ1LDAuOTU3OTgxIDAuMTQxNjM0OSwxLjQwMDgzMiAwLjA5MzU5MSwwLjQ0Mjg1MSAwLjIzMjUxOTEsMC44NDkxOTEyIDAuNDA1NDI5MiwxLjE4ODExMzEgMC4xNzI5MTAzLDAuMzM4OTIyMyAwLjM3OTU4NTMsMC42MTA0MDExIDAuNjA1NDg4MiwwLjc5MzgwNTQgMC4yMjU5MDI4LDAuMTgzNDAzMyAwLjQ3MDc0ODUsMC4yNzY3MTk2IDAuNzE1MjU1MSwwLjI3NjY5MzIgeiIKICAgICBzb2RpcG9kaTpub2RldHlwZXM9ImNzc3Njc3NzY3Nzc2Nzc3NjIiAvPgogIDxnCiAgICAgaWQ9ImcyIgogICAgIHRyYW5zZm9ybT0ibWF0cml4KDAuNjI1NjIxNSwwLjYyNTYyMTUsLTAuNjI1NjIxNSwwLjYyNTYyMTUsNC45NDI1Njk5LC0xLjE4MDUzNzYpIgogICAgIHN0eWxlPSJzdHJva2Utd2lkdGg6MC41O3N0cm9rZS1kYXNoYXJyYXk6bm9uZSI+CiAgICA8cGF0aAogICAgICAgc3R5bGU9ImZpbGw6IzAwMDBmZjtmaWxsLW9wYWNpdHk6MC41MDc3MzI7c3Ryb2tlOiMwMDAwZmY7c3Ryb2tlLXdpZHRoOjAuNTtzdHJva2UtbGluZWNhcDpyb3VuZDtzdHJva2UtZGFzaGFycmF5Om5vbmU7c3Ryb2tlLWRhc2hvZmZzZXQ6MDtzdHJva2Utb3BhY2l0eToxO3BhaW50LW9yZGVyOm1hcmtlcnMgc3Ryb2tlIGZpbGwiCiAgICAgICBkPSJtIDAuODQ4MzU2MSw0Ljg5MzYxOTggaCA4LjI3NDEyMSIKICAgICAgIGlkPSJwYXRoMTIiIC8+CiAgICA8cGF0aAogICAgICAgc3R5bGU9ImZpbGw6IzAwMDBmZjtmaWxsLW9wYWNpdHk6MC41MDc3MzI7c3Ryb2tlOiMwMDAwZmY7c3Ryb2tlLXdpZHRoOjAuNTtzdHJva2UtbGluZWNhcDpyb3VuZDtzdHJva2UtZGFzaGFycmF5Om5vbmU7c3Ryb2tlLWRhc2hvZmZzZXQ6MDtzdHJva2Utb3BhY2l0eToxO3BhaW50LW9yZGVyOm1hcmtlcnMgc3Ryb2tlIGZpbGwiCiAgICAgICBkPSJtIDQuOTg1NDE2NiwwLjc1NjU1OTMgdiA4LjI3NDEyMSIKICAgICAgIGlkPSJwYXRoMTMiIC8+CiAgPC9nPgo8L3N2Zz4K" alt="" aria-hidden="true">
+            <span class="sr-only">Fisheye</span>
+          </button>
         </div>
       </section>
     </aside>
   </div>
-
-  <div class="legend">
-    <span class="red">Local X edges</span>
-    <span class="green">Local Y edges</span>
-    <span class="blue">Local Z edges</span>
-  </div>
-  <div class="footer-note">Vanishing-point coordinates are reported in canvas pixels from the top-left corner. The default cube centre is (0, 0, 0), size is 1, yaw is 0°, roll is 0°, cube pitch is 0°, and camera pitch is 0°. Moving the cube vertically no longer changes the horizon. Camera pitch controls the horizon height and creates the vertical vanishing point; camera height moves the eye without tilting it. Double-click any slider to reset it. Double-click the canvas to reset all sliders and centre the view without changing the fisheye checkbox. Field-of-view changes are distance-compensated so the cube remains approximately the same size on screen. Drag empty canvas space to pan, use the mouse wheel to zoom about world origin (0, 0), and drag a cube edge to rotate using the most screen-normal available yaw, roll, or pitch axis. Construction lines now stop at a visible vanishing point instead of running past it. Enable 5/6-point fisheye for a 180° circular projection with curved lines and separate positive and negative axis vanishing points. Toggle Guidelines to draw low-opacity coloured rays from each outer frame-grid intercept to the current vanishing points.</div>
 </main>
 
 <script>
@@ -375,9 +807,34 @@
 
   const canvas = document.getElementById("view");
   const ctx = canvas.getContext("2d");
+  const canvasShell = document.querySelector(".canvas-shell");
+  const workspace = document.querySelector(".workspace");
+  const sidePanel = document.getElementById("sidePanel");
+  const sidePanelToggle = document.getElementById("sidePanelToggle");
+  const legendPanelToggle = document.getElementById("legendPanelToggle");
+  const canvasElementsPanel = document.getElementById("canvasElementsPanel");
+  const canvasElementsToggle = document.getElementById("canvasElementsToggle");
+  const canvasElementsArrow = document.getElementById("canvasElementsArrow");
+  const exportPngButton = document.getElementById("exportPng");
+  let sidePanelExpanded = true;
+  let legendPanelExpanded = true;
+  let canvasElementsExpanded = true;
+
+  const canvasElementInputs = {
+    cube: document.getElementById("showCube"),
+    cubeAxes: document.getElementById("showCubeAxes"),
+    guidelines: document.getElementById("showGuidelines"),
+    vanishingPoints: document.getElementById("showVanishingPoints"),
+    groundPlane: document.getElementById("showGroundPlane"),
+    groundGrid: document.getElementById("showGroundGrid"),
+    horizon: document.getElementById("showHorizon"),
+    frameGrid: document.getElementById("showFrameGrid"),
+    projectionBoundary: document.getElementById("showProjectionBoundary")
+  };
 
   const controls = {
     cubeSize: document.getElementById("cubeSize"),
+    cubeX: document.getElementById("cubeX"),
     cubeY: document.getElementById("cubeY"),
     cubeDepth: document.getElementById("cubeDepth"),
     yaw: document.getElementById("yaw"),
@@ -385,13 +842,18 @@
     pitch: document.getElementById("pitch"),
     fov: document.getElementById("fov"),
     cameraHeight: document.getElementById("cameraHeight"),
-    cameraPitch: document.getElementById("cameraPitch"),
-    fisheye: document.getElementById("fisheye"),
-    guidelines: document.getElementById("guidelines")
+    cameraPitch: document.getElementById("cameraPitch")
   };
+
+  const projectionButtons = {
+    rectilinear: document.getElementById("rectilinearMode"),
+    fisheye: document.getElementById("fisheyeMode")
+  };
+  let projectionMode = "rectilinear";
 
   const outputs = {
     cubeSize: document.getElementById("cubeSizeOut"),
+    cubeX: document.getElementById("cubeXOut"),
     cubeY: document.getElementById("cubeYOut"),
     cubeDepth: document.getElementById("cubeDepthOut"),
     yaw: document.getElementById("yawOut"),
@@ -399,21 +861,48 @@
     pitch: document.getElementById("pitchOut"),
     fov: document.getElementById("fovOut"),
     cameraHeight: document.getElementById("cameraHeightOut"),
-    cameraPitch: document.getElementById("cameraPitchOut"),
-    vpX: document.getElementById("vpX"),
-    vpY: document.getElementById("vpY"),
-    vpZ: document.getElementById("vpZ")
+    cameraPitch: document.getElementById("cameraPitchOut")
   };
 
   const COLORS = {
-    x: "#ff4d5a",
-    y: "#49d17d",
-    z: "#4aa3ff",
+    // Exact RGB colours used by the X, Y and Z rotation icons.
+    x: "#ff0000",
+    y: "#00ff00",
+    z: "#0000ff",
     grid: "rgba(210,220,235,.18)",
     gridMajor: "rgba(235,240,247,.38)",
-    horizon: "rgba(255,255,255,.64)",
+    horizon: "rgba(255,255,255,.50)",
     plane: "rgba(180,195,215,.07)"
   };
+
+  // Vanishing-point markers, labels and legend accents follow their axis colours.
+  // Cube edges, construction lines, local axes, guides, VP markers and legend accents share these exact icon colours.
+  const VP_COLORS = {
+    x: COLORS.x,
+    y: COLORS.y,
+    z: COLORS.z
+  };
+
+  const VP_LABEL_COLORS = {
+    x: COLORS.x,
+    y: COLORS.y,
+    z: COLORS.z
+  };
+
+  const HORIZON_DOT_WIDTH = 1.4;
+  const HORIZON_DOT_GAP = HORIZON_DOT_WIDTH * 30;
+  const HORIZON_DASH = [0.01, HORIZON_DOT_GAP];
+
+  const FISHEYE_GUIDE_INTERVAL_DEGREES = 15;
+  const FISHEYE_GUIDE_DASH = [];
+  const FISHEYE_GUIDE_WIDTH = 1.8;
+  const FISHEYE_GUIDE_OPACITY = 0.24;
+
+  function readCanvasVisibility() {
+    return Object.fromEntries(
+      Object.entries(canvasElementInputs).map(([key,input]) => [key,input.checked])
+    );
+  }
 
   const EPS = 1e-7;
   const deg = a => a * Math.PI / 180;
@@ -434,11 +923,13 @@
     rotateControl: null,
     rotateNormalX: 0,
     rotateNormalY: 0,
+    rotateDirection: 1,
     latestProjected: null,
     latestEdges: null,
     latestEdgePaths: null,
     latestState: null,
-    latestCamera: null
+    latestCamera: null,
+    gridRows: 10
   };
 
   const V = {
@@ -458,55 +949,200 @@
     }
   };
 
-  function rotateYawRollPitch(p, yaw, roll, pitch) {
-    const cy = Math.cos(yaw), sy = Math.sin(yaw);
-    const cr = Math.cos(roll), sr = Math.sin(roll);
-    const cp = Math.cos(pitch), sp = Math.sin(pitch);
+  const Q = {
+    identity: () => ({w:1,x:0,y:0,z:0}),
+    multiply: (a,b) => ({
+      w:a.w*b.w-a.x*b.x-a.y*b.y-a.z*b.z,
+      x:a.w*b.x+a.x*b.w+a.y*b.z-a.z*b.y,
+      y:a.w*b.y-a.x*b.z+a.y*b.w+a.z*b.x,
+      z:a.w*b.z+a.x*b.y-a.y*b.x+a.z*b.w
+    }),
+    normalize: q => {
+      const length = Math.hypot(q.w,q.x,q.y,q.z) || 1;
+      return {w:q.w/length,x:q.x/length,y:q.y/length,z:q.z/length};
+    },
+    fromAxis: (axis,angle) => {
+      const half = angle*0.5;
+      const sine = Math.sin(half);
+      return {
+        w:Math.cos(half),
+        x:axis === "x" ? sine : 0,
+        y:axis === "y" ? sine : 0,
+        z:axis === "z" ? sine : 0
+      };
+    },
+    rotate: (q,p) => {
+      const u = {x:q.x,y:q.y,z:q.z};
+      const dotUV = V.dot(u,p);
+      const dotUU = V.dot(u,u);
+      const crossUV = V.cross(u,p);
+      return {
+        x:2*dotUV*u.x+(q.w*q.w-dotUU)*p.x+2*q.w*crossUV.x,
+        y:2*dotUV*u.y+(q.w*q.w-dotUU)*p.y+2*q.w*crossUV.y,
+        z:2*dotUV*u.z+(q.w*q.w-dotUU)*p.z+2*q.w*crossUV.z
+      };
+    }
+  };
 
-    const yawed = {
-      x: cy*p.x + sy*p.z,
-      y: p.y,
-      z: -sy*p.x + cy*p.z
-    };
+  const ROTATION_AXES = {
+    yaw: "y",
+    roll: "z",
+    pitch: "x"
+  };
 
-    const rolled = {
-      x: cr*yawed.x - sr*yawed.y,
-      y: sr*yawed.x + cr*yawed.y,
-      z: yawed.z
-    };
-
-    return {
-      x: rolled.x,
-      y: cp*rolled.y - sp*rolled.z,
-      z: sp*rolled.y + cp*rolled.z
-    };
+  function orientationFromSliderValues(values) {
+    // Reproduce the original default Euler order only when establishing a
+    // reset orientation. Subsequent slider movement uses current local axes.
+    const yawQ = Q.fromAxis("y",deg(values.yaw));
+    const rollQ = Q.fromAxis("z",deg(values.roll));
+    const pitchQ = Q.fromAxis("x",deg(values.pitch));
+    return Q.normalize(Q.multiply(pitchQ,Q.multiply(rollQ,yawQ)));
   }
 
+  const cubeRotation = {
+    q: Q.identity(),
+    sliderValues: {
+      yaw:+controls.yaw.value,
+      roll:+controls.roll.value,
+      pitch:+controls.pitch.value
+    }
+  };
+  cubeRotation.q = orientationFromSliderValues(cubeRotation.sliderValues);
+
+  function orientationWithLocalDelta(q,controlName,degrees) {
+    const localDelta = Q.fromAxis(ROTATION_AXES[controlName],deg(degrees));
+    // Right multiplication rotates around the cube's current local axis.
+    return Q.normalize(Q.multiply(q,localDelta));
+  }
+
+  function applyLocalSliderRotation(controlName,newValue=+controls[controlName].value) {
+    const previousValue = cubeRotation.sliderValues[controlName];
+    const delta = newValue-previousValue;
+    if (Math.abs(delta) > EPS) {
+      cubeRotation.q = orientationWithLocalDelta(cubeRotation.q,controlName,delta);
+    }
+    cubeRotation.sliderValues[controlName] = newValue;
+  }
+
+  function setRotationSliderValue(controlName,value) {
+    controls[controlName].value = value;
+    applyLocalSliderRotation(controlName,+controls[controlName].value);
+  }
+
+  function resetCubeOrientation() {
+    for (const controlName of Object.keys(ROTATION_AXES)) {
+      controls[controlName].value = controls[controlName].dataset.default;
+      cubeRotation.sliderValues[controlName] = +controls[controlName].value;
+    }
+    cubeRotation.q = orientationFromSliderValues(cubeRotation.sliderValues);
+  }
+
+  // Keep translation as persistent world-space position. Each slider delta is
+  // applied along the cube's local axis at the moment the slider moves. This
+  // preserves local-axis translation without letting later rotations rotate
+  // the translation vector and drag the cube's pivot around the scene.
+  const cubeTranslation = {
+    center: {x:0,y:0,z:0},
+    sliderValues: {
+      cubeX:+controls.cubeX.value,
+      cubeY:+controls.cubeY.value,
+      cubeDepth:+controls.cubeDepth.value
+    }
+  };
+
+  function localTranslationAxis(controlName,orientation=cubeRotation.q) {
+    return Q.rotate(
+      orientation,
+      controlName === "cubeX" ? {x:1,y:0,z:0} :
+      controlName === "cubeY" ? {x:0,y:1,z:0} : {x:0,y:0,z:1}
+    );
+  }
+
+  function mappedTranslationValue(controlName,value,mode=projectionMode) {
+    if (controlName !== "cubeDepth") return value;
+
+    // Use the same local-Z distance response in both projection modes:
+    // roughly 2× through most of the slider, then a smooth acceleration
+    // toward practical infinity near either end. ±10 maps to approximately
+    // ±1000 world units so the cube can become sub-pixel at the far distance.
+    const magnitude = Math.abs(value);
+    const farBoost = 980 * Math.pow(magnitude / 10,12);
+    return Math.sign(value) * (2 * magnitude + farBoost);
+  }
+
+  function applyLocalSliderTranslation(controlName,newValue=+controls[controlName].value) {
+    const previousValue = cubeTranslation.sliderValues[controlName];
+    const previousMapped = mappedTranslationValue(controlName,previousValue);
+    const newMapped = mappedTranslationValue(controlName,newValue);
+    const delta = newMapped-previousMapped;
+
+    if (Math.abs(delta) > EPS) {
+      cubeTranslation.center = V.add(
+        cubeTranslation.center,
+        V.scale(localTranslationAxis(controlName),delta)
+      );
+    }
+    cubeTranslation.sliderValues[controlName] = newValue;
+  }
+
+  function resetCubeTranslation() {
+    cubeTranslation.center = {x:0,y:0,z:0};
+    for (const controlName of ["cubeX","cubeY","cubeDepth"]) {
+      const value = +controls[controlName].value;
+      cubeTranslation.sliderValues[controlName] = 0;
+      applyLocalSliderTranslation(controlName,value);
+    }
+  }
+
+  resetCubeTranslation();
+
   function setupCamera(state, w, h) {
-    // Camera position, cube position and camera orientation are independent.
-    // This keeps the horizon fixed when the cube moves up or down.
-    const baseFov = 52;
+    // Camera translation and tilt remain locked to the global coordinate frame.
+    // Camera height always moves along global Y, while pitch rotates the viewing
+    // direction in the global Y-Z plane about the global X axis. Cube rotation
+    // therefore has no effect on either camera control or on the horizon.
+    // Use the slider's default as the permanent size-compensation reference.
+    const baseFov = +(controls.fov.dataset.default || 60);
     const baseDistance = 8;
-    const focal = (h * 0.5) / Math.tan(deg(state.fov) * 0.5);
-    const baseFocal = (h * 0.5) / Math.tan(deg(baseFov) * 0.5);
-    const compensatedDistance = state.fisheye
-      ? 6
-      : baseDistance * (focal / baseFocal);
 
-    const position = {
-      x: 0,
-      y: state.cameraHeight,
-      z: compensatedDistance
-    };
+    // The rectilinear slider represents diagonal FOV. Derive the shared
+    // focal length from the current canvas diagonal so X and Y remain uniform.
+    // A small lower clamp avoids the singularity at exactly 0°.
+    const effectiveFov = Math.max(0.1, Math.min(130, state.fov));
+    const effectiveBaseFov = Math.max(0.1, Math.min(130, baseFov));
+    const imageDiagonal = Math.hypot(w, h);
+    const focal = (imageDiagonal * 0.5) / Math.tan(deg(effectiveFov) * 0.5);
+    const baseFocal = (imageDiagonal * 0.5) / Math.tan(deg(effectiveBaseFov) * 0.5);
 
-    // Positive pitch looks upward; negative pitch looks downward.
-    const cameraPitch = deg(state.cameraPitch);
-    const forward = {
-      x: 0,
-      y: Math.sin(cameraPitch),
-      z: -Math.cos(cameraPitch)
-    };
-    const right = {x:1,y:0,z:0};
+    let cameraDistance;
+    if (state.fisheye) {
+      cameraDistance = 6;
+    } else {
+      // Permanently counter the focal-length change so the cube remains
+      // approximately the same apparent size as rectilinear FOV changes.
+      cameraDistance = Math.max(0.2, baseDistance * (focal / baseFocal));
+    }
+
+    const globalX = {x:1,y:0,z:0};
+    const globalY = {x:0,y:1,z:0};
+    const globalZ = {x:0,y:0,z:1};
+
+    // Deliberately use global Y rather than the camera's tilted up vector.
+    const position = V.add(
+      V.scale(globalY,state.cameraHeight),
+      V.scale(globalZ,cameraDistance)
+    );
+
+    // Positive pitch looks upward; negative pitch looks downward. The forward
+    // vector is constrained to the global Y-Z plane, so pitch is always about
+    // global X and cannot roll or yaw as a side effect.
+    const effectiveCameraPitch = Math.max(-89.9, Math.min(89.9, state.cameraPitch));
+    const cameraPitch = deg(effectiveCameraPitch);
+    const forward = V.norm(V.add(
+      V.scale(globalY,Math.sin(cameraPitch)),
+      V.scale(globalZ,-Math.cos(cameraPitch))
+    ));
+    const right = globalX;
     const up = V.norm(V.cross(right, forward));
 
     return {
@@ -514,13 +1150,36 @@
       forward,
       right,
       up,
-      focal: focal * viewState.zoom,
-      cx: w/2 + viewState.panX,
-      cy: h/2 + viewState.panY,
+      // Camera projection remains independent of canvas pan and wheel zoom.
+      focal,
+      cx: w/2,
+      cy: h/2,
       fisheye: state.fisheye,
-      fisheyeRadius: Math.min(w,h) * 0.47 * viewState.zoom,
-      fisheyeHalfFov: Math.PI * 0.5
+      fisheyeRadius: Math.min(w,h) * 0.47,
+      fisheyeHalfFov: Math.PI * 0.5,
+      projectionLimit: Math.max(w,h) * 20
     };
+  }
+
+  function canvasViewPoint(p) {
+    if (!p) return null;
+    return {
+      ...p,
+      x: p.x * viewState.zoom + viewState.panX,
+      y: p.y * viewState.zoom + viewState.panY
+    };
+  }
+
+  function canvasViewDirection(v) {
+    return {
+      ...v,
+      dx: v.dx * viewState.zoom,
+      dy: v.dy * viewState.zoom
+    };
+  }
+
+  function canvasViewRadius(radius) {
+    return radius * viewState.zoom;
   }
 
   function worldToCamera(p, cam) {
@@ -532,14 +1191,18 @@
     };
   }
 
-  function projectCameraVector(c, cam) {
+  function projectCameraVectorRaw(c, cam) {
     if (!cam.fisheye) {
       if (c.z <= 0.03) return null;
-      return {
-        x: cam.cx + cam.focal * c.x / c.z,
-        y: cam.cy - cam.focal * c.y / c.z,
-        depth: c.z
-      };
+      const x = cam.cx + cam.focal * c.x / c.z;
+      const y = cam.cy - cam.focal * c.y / c.z;
+      if (
+        !Number.isFinite(x) ||
+        !Number.isFinite(y) ||
+        Math.abs(x-cam.cx) > cam.projectionLimit ||
+        Math.abs(y-cam.cy) > cam.projectionLimit
+      ) return null;
+      return {x,y,depth:c.z};
     }
 
     const length = Math.hypot(c.x,c.y,c.z);
@@ -563,11 +1226,19 @@
     };
   }
 
+  function projectCameraVector(c, cam) {
+    return canvasViewPoint(projectCameraVectorRaw(c,cam));
+  }
+
+  function projectWorldRaw(p, cam) {
+    return projectCameraVectorRaw(worldToCamera(p,cam),cam);
+  }
+
   function projectWorld(p, cam) {
     return projectCameraVector(worldToCamera(p,cam),cam);
   }
 
-  function projectDirection(dir, cam) {
+  function projectDirectionRaw(dir, cam) {
     const c = {
       x: V.dot(dir, cam.right),
       y: V.dot(dir, cam.up),
@@ -575,7 +1246,7 @@
     };
 
     if (cam.fisheye) {
-      const projected = projectCameraVector(c,cam);
+      const projected = projectCameraVectorRaw(c,cam);
       return projected
         ? {...projected,finite:true,visible:true}
         : {finite:true,visible:false};
@@ -593,12 +1264,28 @@
     };
   }
 
+  function projectDirection(dir, cam) {
+    const projected = projectDirectionRaw(dir,cam);
+    return projected.finite
+      ? canvasViewPoint(projected)
+      : canvasViewDirection(projected);
+  }
+
   function projectAxisVanishing(dir, cam) {
     const positive = projectDirection(dir,cam);
     if (!cam.fisheye) return {positive,negative:positive};
     return {
       positive,
       negative: projectDirection(V.scale(dir,-1),cam)
+    };
+  }
+
+  function projectAxisVanishingRaw(dir, cam) {
+    const positive = projectDirectionRaw(dir,cam);
+    if (!cam.fisheye) return {positive,negative:positive};
+    return {
+      positive,
+      negative: projectDirectionRaw(V.scale(dir,-1),cam)
     };
   }
 
@@ -626,11 +1313,12 @@
     return [pts[0], pts[pts.length-1]];
   }
 
-  function drawSegment(a, b, style, width=1, dash=[]) {
+  function drawSegment(a, b, style, width=1, dash=[], lineCap="butt") {
     if (!a || !b) return;
     ctx.save();
     ctx.strokeStyle = style;
     ctx.lineWidth = width;
+    ctx.lineCap = lineCap;
     ctx.setLineDash(dash);
     ctx.beginPath();
     ctx.moveTo(a.x,a.y);
@@ -639,11 +1327,12 @@
     ctx.restore();
   }
 
-  function drawPolyline(points, style, width=1, dash=[], close=false, fill=null) {
+  function drawPolyline(points, style, width=1, dash=[], close=false, fill=null, lineCap="butt") {
     if (!points || points.length < 2) return;
     ctx.save();
     ctx.strokeStyle = style;
     ctx.lineWidth = width;
+    ctx.lineCap = lineCap;
     ctx.setLineDash(dash);
     if (fill) ctx.fillStyle = fill;
     ctx.beginPath();
@@ -688,16 +1377,19 @@
   }
 
   function drawFrameGrid(w, h) {
+    const columns = 10;
+    const squareSize = w / columns;
     ctx.save();
     ctx.strokeStyle = "rgba(220,230,242,.08)";
     ctx.lineWidth = 1;
-    for (let i = 0; i <= 10; i++) {
-      const x = (i / 10) * w;
-      const y = (i / 10) * h;
+    for (let i = 0; i <= columns; i++) {
+      const x = i * squareSize;
       ctx.beginPath();
       ctx.moveTo(x, 0);
       ctx.lineTo(x, h);
       ctx.stroke();
+    }
+    for (let y = 0; y <= h + 0.01; y += squareSize) {
       ctx.beginPath();
       ctx.moveTo(0, y);
       ctx.lineTo(w, y);
@@ -743,6 +1435,97 @@
     }
   }
 
+  function sampleVisibleDirectionCircle(directionAtAngle, cam, samples=360) {
+    const runs = [];
+    let run = [];
+
+    for (let i=0; i<=samples; i++) {
+      const angle = (i/samples)*Math.PI*2;
+      const p = projectDirection(directionAtAngle(angle),cam);
+      if (p.visible) {
+        run.push(p);
+      } else if (run.length) {
+        runs.push(run);
+        run = [];
+      }
+    }
+    if (run.length) runs.push(run);
+
+    // A visible semicircle can straddle the 0/2π sampling seam. Join those
+    // two pieces so the dash pattern and curve remain visually continuous.
+    if (runs.length > 1 && runs[0].length && runs[runs.length-1].length) {
+      runs[0] = runs[runs.length-1].concat(runs[0]);
+      runs.pop();
+    }
+
+    return runs;
+  }
+
+  function drawFisheyeGreatCircleGuides(cam, orientation=cubeRotation.q) {
+    if (!cam.fisheye) return;
+
+    // Build the guide families from the cube's rotated local basis. Each
+    // coloured family therefore passes through the same positive/negative
+    // vanishing points as its matching cube axis and follows every rotation.
+    const rotatedBasis = {
+      x: Q.rotate(orientation,{x:1,y:0,z:0}),
+      y: Q.rotate(orientation,{x:0,y:1,z:0}),
+      z: Q.rotate(orientation,{x:0,y:0,z:1})
+    };
+
+    const axisFamilies = [
+      {
+        axis:"x",
+        axisVector:rotatedBasis.x,
+        radialA:rotatedBasis.y,
+        radialB:rotatedBasis.z
+      },
+      {
+        axis:"y",
+        axisVector:rotatedBasis.y,
+        radialA:rotatedBasis.x,
+        radialB:rotatedBasis.z
+      },
+      {
+        axis:"z",
+        axisVector:rotatedBasis.z,
+        radialA:rotatedBasis.x,
+        radialB:rotatedBasis.y
+      }
+    ];
+
+    for (const family of axisFamilies) {
+      const style = hexToRgba(COLORS[family.axis],FISHEYE_GUIDE_OPACITY);
+
+      // Great-circle planes repeat after 180°, so 0° through 165° supplies
+      // every unique plane at 15° intervals around the selected axis.
+      for (let guideAngle=0; guideAngle<180; guideAngle+=FISHEYE_GUIDE_INTERVAL_DEGREES) {
+        const guideRadians = deg(guideAngle);
+        const radial = V.add(
+          V.scale(family.radialA,Math.cos(guideRadians)),
+          V.scale(family.radialB,Math.sin(guideRadians))
+        );
+
+        const directionAtAngle = circleAngle => V.add(
+          V.scale(family.axisVector,Math.cos(circleAngle)),
+          V.scale(radial,Math.sin(circleAngle))
+        );
+
+        for (const run of sampleVisibleDirectionCircle(directionAtAngle,cam,360)) {
+          drawPolyline(
+            run,
+            style,
+            FISHEYE_GUIDE_WIDTH,
+            FISHEYE_GUIDE_DASH,
+            false,
+            null,
+            "round"
+          );
+        }
+      }
+    }
+  }
+
   function drawHorizon(cam, w, h) {
     if (cam.fisheye) {
       const runs = [];
@@ -764,16 +1547,7 @@
         runs.pop();
       }
 
-      for (const horizonRun of runs) drawPolyline(horizonRun,COLORS.horizon,1.4,[8,7]);
-      const longest = runs.slice().sort((a,b)=>b.length-a.length)[0];
-      if (longest && longest.length) {
-        const mid = longest[Math.floor(longest.length/2)];
-        ctx.save();
-        ctx.fillStyle = "rgba(255,255,255,.76)";
-        ctx.font = `${Math.max(11,w*0.016)}px system-ui, sans-serif`;
-        ctx.fillText("HORIZON", Math.min(w-70,Math.max(8,mid.x+8)), Math.min(h-8,Math.max(18,mid.y-7)));
-        ctx.restore();
-      }
+      for (const horizonRun of runs) drawPolyline(horizonRun,COLORS.horizon,HORIZON_DOT_WIDTH,HORIZON_DASH,false,null,"round");
       return;
     }
 
@@ -790,14 +1564,21 @@
     }
 
     if (line) {
-      drawSegment(line[0],line[1],COLORS.horizon,1.4,[8,7]);
-      const mid = {x:(line[0].x+line[1].x)/2, y:(line[0].y+line[1].y)/2};
-      ctx.save();
-      ctx.fillStyle = "rgba(255,255,255,.76)";
-      ctx.font = `${Math.max(11, w*0.016)}px system-ui, sans-serif`;
-      ctx.fillText("HORIZON", Math.min(w-70, Math.max(8,mid.x+8)), Math.min(h-8, Math.max(18,mid.y-7)));
-      ctx.restore();
+      drawSegment(line[0],line[1],COLORS.horizon,HORIZON_DOT_WIDTH,HORIZON_DASH,"round");
     }
+  }
+
+  function drawVisionConeBoundary(cam) {
+    if (cam.fisheye) return;
+    ctx.save();
+    ctx.strokeStyle = "rgba(255,255,255,.22)";
+    ctx.lineWidth = 1.25;
+    ctx.setLineDash([6,7]);
+    const centre = canvasViewPoint({x:cam.cx,y:cam.cy});
+    ctx.beginPath();
+    ctx.arc(centre.x,centre.y,canvasViewRadius(cam.fisheyeRadius),0,Math.PI*2);
+    ctx.stroke();
+    ctx.restore();
   }
 
   function drawFisheyeBoundary(cam) {
@@ -805,15 +1586,24 @@
     ctx.save();
     ctx.strokeStyle = "rgba(255,255,255,.34)";
     ctx.lineWidth = 2;
+    const centre = canvasViewPoint({x:cam.cx,y:cam.cy});
     ctx.beginPath();
-    ctx.arc(cam.cx,cam.cy,cam.fisheyeRadius,0,Math.PI*2);
+    ctx.arc(centre.x,centre.y,canvasViewRadius(cam.fisheyeRadius),0,Math.PI*2);
     ctx.stroke();
     ctx.restore();
   }
 
-  function cubeGeometry(state) {
-    const yaw = deg(state.yaw), roll = deg(state.roll), pitch = deg(state.pitch);
-    const center = {x:0, y:state.cubeY, z:state.cubeDepth};
+  function cubeGeometry(state,orientation=cubeRotation.q) {
+    const axes = {
+      x: Q.rotate(orientation,{x:1,y:0,z:0}),
+      y: Q.rotate(orientation,{x:0,y:1,z:0}),
+      z: Q.rotate(orientation,{x:0,y:0,z:1})
+    };
+
+    // The centre is persistent in world space. Translation slider movement is
+    // accumulated along the cube's live local X/Y/Z axes by the input handlers,
+    // while rotation only changes the vertex offsets around this fixed centre.
+    const center = {...cubeTranslation.center};
     const h = state.cubeSize * 0.5;
 
     const local = [
@@ -823,13 +1613,7 @@
       {x:h,y:h,z:h},    {x:-h,y:h,z:h}
     ];
 
-    const world = local.map(p => V.add(rotateYawRollPitch(p,yaw,roll,pitch), center));
-
-    const axes = {
-      x: rotateYawRollPitch({x:1,y:0,z:0},yaw,roll,pitch),
-      y: rotateYawRollPitch({x:0,y:1,z:0},yaw,roll,pitch),
-      z: rotateYawRollPitch({x:0,y:0,z:1},yaw,roll,pitch)
-    };
+    const world = local.map(p => V.add(Q.rotate(orientation,p),center));
 
     const edges = [
       [0,1,"x"], [3,2,"x"], [4,5,"x"], [7,6,"x"],
@@ -837,7 +1621,25 @@
       [0,4,"z"], [1,5,"z"], [2,6,"z"], [3,7,"z"]
     ];
 
-    return {world, axes, edges};
+    return {world, axes, edges, center, size: state.cubeSize};
+  }
+
+  function drawCubeAxes(center, axes, size, cam, lod={opacity:1,lineScale:1}) {
+    if (lod.opacity <= 0.001) return;
+    const halfLength = size * 0.72;
+    for (const axis of ["x","y","z"]) {
+      const start = V.add(center,V.scale(axes[axis],-halfLength));
+      const end = V.add(center,V.scale(axes[axis],halfLength));
+      drawWorldSegment(
+        start,
+        end,
+        cam,
+        hexToRgba(COLORS[axis],0.88 * lod.opacity),
+        1.35 * lod.lineScale,
+        [7,6],
+        48
+      );
+    }
   }
 
   function rayToFrame(start, target, w, h) {
@@ -932,7 +1734,99 @@
     return `rgba(${r},${g},${b},${alpha})`;
   }
 
-  function drawCube(world, projected, edges, cam) {
+  function drawClosestCubeFaces(world, projected, cam, lod={opacity:1,lineScale:1}) {
+    if (lod.opacity <= 0.001) return;
+    const facePairs = {
+      x: [[0,3,7,4],[1,5,6,2]],
+      y: [[0,4,5,1],[3,2,6,7]],
+      z: [[0,1,2,3],[4,7,6,5]]
+    };
+
+    const faceDepth = face => face.reduce((sum,index) => {
+      const cameraPoint = worldToCamera(world[index],cam);
+      return sum + (cam.fisheye
+        ? Math.hypot(cameraPoint.x,cameraPoint.y,cameraPoint.z)
+        : cameraPoint.z);
+    },0) / face.length;
+
+    const selected = Object.entries(facePairs).map(([axis,pair]) => {
+      const aDepth = faceDepth(pair[0]);
+      const bDepth = faceDepth(pair[1]);
+      return {axis,face:aDepth <= bDepth ? pair[0] : pair[1],depth:Math.min(aDepth,bDepth)};
+    }).sort((a,b) => b.depth-a.depth);
+
+    for (const {axis,face} of selected) {
+      const perimeter = [];
+      let complete = true;
+
+      for (let i=0;i<face.length;i++) {
+        const a = face[i];
+        const b = face[(i+1)%face.length];
+        const runs = cam.fisheye
+          ? sampleWorldSegment(world[a],world[b],cam,28)
+          : [[projected[a],projected[b]].filter(Boolean)];
+        const run = runs.find(points => points.length >= 2);
+        if (!run) { complete = false; break; }
+        for (const point of run) {
+          const previous = perimeter[perimeter.length-1];
+          if (!previous || Math.hypot(previous.x-point.x,previous.y-point.y) > 0.01) {
+            perimeter.push(point);
+          }
+        }
+      }
+
+      if (!complete || perimeter.length < 3) continue;
+      ctx.save();
+      ctx.fillStyle = hexToRgba(COLORS[axis],0.03 * lod.opacity);
+      ctx.beginPath();
+      ctx.moveTo(perimeter[0].x,perimeter[0].y);
+      for (let i=1;i<perimeter.length;i++) ctx.lineTo(perimeter[i].x,perimeter[i].y);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  function drawFisheyeOutsideMask(cam,w,h) {
+    if (!cam.fisheye) return;
+    const centre = canvasViewPoint({x:cam.cx,y:cam.cy});
+    const radius = canvasViewRadius(cam.fisheyeRadius);
+    ctx.save();
+    ctx.fillStyle = "rgba(0,0,0,0.05)";
+    ctx.beginPath();
+    ctx.rect(0,0,w,h);
+    ctx.moveTo(centre.x+radius,centre.y);
+    ctx.arc(centre.x,centre.y,radius,0,Math.PI*2);
+    ctx.fill("evenodd");
+    ctx.restore();
+  }
+
+  function cubeApparentLod(projected) {
+    const points = projected.filter(Boolean);
+    if (!points.length) return {extent:0,opacity:0,lineScale:0};
+
+    const xs = points.map(point => point.x);
+    const ys = points.map(point => point.y);
+    const extent = Math.max(
+      Math.max(...xs)-Math.min(...xs),
+      Math.max(...ys)-Math.min(...ys)
+    );
+
+    // Fade the complete cube representation below eight projected pixels and
+    // remove it entirely below half a pixel. This prevents fixed-width edges
+    // and vertex dots from remaining visible after the geometry is sub-pixel.
+    const t = Math.max(0,Math.min(1,(extent-0.5)/(8-0.5)));
+    const opacity = t*t*(3-2*t);
+    const lineScale = Math.max(0.08,Math.min(1,extent/12));
+    return {extent,opacity,lineScale};
+  }
+
+  function drawCube(world, projected, edges, cam, lod={opacity:1,lineScale:1}) {
+    if (lod.opacity <= 0.001) {
+      viewState.latestEdgePaths = [];
+      return;
+    }
+
     const sorted = edges.slice().sort((e1,e2) => {
       const d1 = ((projected[e1[0]]?.depth || 0)+(projected[e1[1]]?.depth || 0))/2;
       const d2 = ((projected[e2[0]]?.depth || 0)+(projected[e2[1]]?.depth || 0))/2;
@@ -947,24 +1841,27 @@
         : [[projected[a],projected[b]].filter(Boolean)];
       edgePaths.push({edge,axis,runs});
       for (const run of runs) {
-        drawPolyline(run,"rgba(0,0,0,.72)",5);
-        drawPolyline(run,COLORS[axis],2.4);
+        drawPolyline(run,`rgba(0,0,0,${0.72 * lod.opacity})`,3.5 * lod.lineScale);
+        drawPolyline(run,hexToRgba(COLORS[axis],lod.opacity),1.68 * lod.lineScale);
       }
     }
     viewState.latestEdgePaths = edgePaths;
 
-    for (const p of projected) {
-      if (!p) continue;
-      ctx.save();
-      ctx.fillStyle = "#f7fbff";
-      ctx.beginPath();
-      ctx.arc(p.x,p.y,2.3,0,Math.PI*2);
-      ctx.fill();
-      ctx.restore();
+    const vertexRadius = 2.3 * lod.lineScale;
+    if (vertexRadius >= 0.18) {
+      for (const p of projected) {
+        if (!p) continue;
+        ctx.save();
+        ctx.fillStyle = `rgba(247,251,255,${lod.opacity})`;
+        ctx.beginPath();
+        ctx.arc(p.x,p.y,vertexRadius,0,Math.PI*2);
+        ctx.fill();
+        ctx.restore();
+      }
     }
   }
 
-  function drawVanishingPoint(vp, color, label, w, h) {
+  function drawVanishingPoint(vp, color, label, w, h, labelColor=color) {
     if (!vp?.finite || vp.visible === false) return;
     if (vp.x < 0 || vp.x > w || vp.y < 0 || vp.y > h) return;
 
@@ -976,73 +1873,290 @@
     ctx.arc(vp.x,vp.y,8,0,Math.PI*2);
     ctx.fill();
     ctx.stroke();
-    ctx.fillStyle = color;
+    ctx.fillStyle = labelColor;
     ctx.font = `700 ${Math.max(11,w*0.016)}px system-ui, sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "bottom";
     const textWidth = ctx.measureText(label).width;
-    const tx = vp.x > w*0.72 ? vp.x-textWidth-12 : vp.x+12;
-    const ty = vp.y < h*0.18 ? vp.y+22 : vp.y-10;
+    const tx = Math.max(textWidth * 0.5 + 4, Math.min(w - textWidth * 0.5 - 4, vp.x));
+    const ty = vp.y - 11;
     ctx.fillText(label,tx,ty);
     ctx.restore();
   }
 
-  function formatVP(vp, w, h) {
+  function formatVPCompact(vp, viewVP, w, h) {
     if (!vp) return "—";
-    if (!vp.finite) return "at infinity · parallel in image plane";
-    if (vp.visible === false) return "outside visible hemisphere";
-    const vis = vp.x>=0 && vp.x<=w && vp.y>=0 && vp.y<=h;
-    return `(${vp.x.toFixed(1)}, ${vp.y.toFixed(1)}) px · ${vis ? "visible" : "off-frame"}`;
+    if (!vp.finite) return "∞";
+    if (vp.visible === false) return "Outside Hemisphere";
+
+    // Coordinates remain camera-projection values, while frame visibility follows
+    // the current 2D canvas pan/zoom view so the status matches what is on screen.
+    const displayedVP = viewVP?.finite ? viewVP : vp;
+    const inFrame = displayedVP.visible !== false &&
+      displayedVP.x >= 0 && displayedVP.x <= w &&
+      displayedVP.y >= 0 && displayedVP.y <= h;
+    // Display VP coordinates in tenths of a canvas pixel, rounded to whole units.
+    // Off-frame coordinates are enclosed in brackets rather than marked with "OF".
+    const coordinateText = `${Math.round(vp.x / 10)},${Math.round(vp.y / 10)}`;
+    return inFrame ? coordinateText : `( ${coordinateText} )`;
   }
 
-  function formatAxisVP(axisVP, w, h, fisheye) {
-    if (!fisheye) return formatVP(axisVP.positive,w,h);
-    return `+ ${formatVP(axisVP.positive,w,h)} · − ${formatVP(axisVP.negative,w,h)}`;
+  function formatAxisVPCompact(axisVP, viewAxisVP, w, h, fisheye) {
+    if (!fisheye) return formatVPCompact(axisVP.positive,viewAxisVP.positive,w,h);
+    const positive = formatVPCompact(axisVP.positive,viewAxisVP.positive,w,h);
+    const negative = formatVPCompact(axisVP.negative,viewAxisVP.negative,w,h);
+    return `+ ${positive}   − ${negative}`;
   }
 
-  function frameGridIntercepts(w, h) {
-    const points = [];
-    const seen = new Set();
+  function roundedRectPath(x, y, width, height, radius) {
+    const r = Math.max(0, Math.min(radius, width * 0.5, height * 0.5));
+    ctx.beginPath();
+    ctx.moveTo(x+r,y);
+    ctx.lineTo(x+width-r,y);
+    ctx.quadraticCurveTo(x+width,y,x+width,y+r);
+    ctx.lineTo(x+width,y+height-r);
+    ctx.quadraticCurveTo(x+width,y+height,x+width-r,y+height);
+    ctx.lineTo(x+r,y+height);
+    ctx.quadraticCurveTo(x,y+height,x,y+height-r);
+    ctx.lineTo(x,y+r);
+    ctx.quadraticCurveTo(x,y,x+r,y);
+    ctx.closePath();
+  }
 
-    function add(x, y) {
-      const key = `${Math.round(x*1000)}:${Math.round(y*1000)}`;
-      if (seen.has(key)) return;
-      seen.add(key);
-      points.push({x, y});
+  function fittedFontSize(text, maxWidth, startSize, minSize, weight=600) {
+    let size = startSize;
+    while (size > minSize) {
+      ctx.font = `${weight} ${size}px system-ui, sans-serif`;
+      if (ctx.measureText(text).width <= maxWidth) break;
+      size -= 1;
+    }
+    return size;
+  }
+
+  const AXIS_ICON_PATHS = {
+    x: [
+      {fill:"#999999",transform:[0.09030857,0,0,0.09928083,-1.3216095,-3.3476837],path:new Path2D("m 108.7314,101.56052 9e-5,-29.896072 a 3.0551618,3.0551618 30.00032 0 0 -4.58272,-2.645869 l -25.891101,14.94796 a 9.1654527,9.1654527 120.0005 0 0 -4.58279,7.937463 l -2.87e-4,29.896518 a 3.0551169,3.0551169 30.000322 0 0 4.582671,2.64584 l 25.891397,-14.94834 a 9.1654521,9.1654521 120.00014 0 0 4.58274,-7.9375 z")},
+      {fill:"#1a1a1a",transform:[0.09030857,0,0,0.09928083,-1.3216095,-3.3476837],path:new Path2D("m 31.269457,101.5629 -9.6e-5,-29.896069 a 3.0551618,3.0551618 149.99968 0 1 4.582722,-2.645869 l 25.891102,14.94796 a 9.1654504,9.1654504 59.999503 0 1 4.582789,7.937463 l 2.8e-4,29.896515 a 3.0551173,3.0551173 149.99969 0 1 -4.582672,2.64584 L 35.852196,109.5004 a 9.1654533,9.1654533 59.999865 0 1 -4.582739,-7.9375 z")},
+      {fill:"#e6e6e6",transform:[0.09030857,0,0,0.09928083,-1.3216095,-3.3476837],path:new Path2D("M 65.417133,42.415484 39.526329,57.363438 a 3.0551619,3.0551619 90.000316 0 0 -2.9e-5,5.291688 l 25.890862,14.94837 a 9.1654538,9.1654538 5.0263966e-4 0 0 9.16544,8e-5 L 100.4739,62.655563 a 3.0551161,3.0551161 90.000317 0 0 3e-5,-5.291629 L 74.582573,42.415505 a 9.1654533,9.1654533 1.31093e-4 0 0 -9.16544,-2.1e-5 z")},
+      {fill:"#ff0000",path:new Path2D("M 4.3127935,0.11087095 C 4.0673259,0.03716055 3.8169921,-5.6193627e-6 3.5659585,0 1.5965314,1.8080637e-5 6.5e-6,2.2385873 0,5.0000001 c 6.5e-6,2.761412 1.5965314,4.9999803 3.5659585,4.9999993 0.2510336,4.6e-6 0.5013674,-0.037154 0.746835,-0.1108689 L 3.8466786,8.9503793 c -0.09322,0.015991 -0.1869332,0.024003 -0.2807201,0.024009 -1.4131577,3.9e-6 -2.5587461,-1.7793925 -2.5587437,-3.9743879 -2.4e-6,-2.1949967 1.1455867,-3.974393 2.5587437,-3.97439 0.093786,-8.7e-6 0.1875001,0.00799 0.2807201,0.023964 L 4.0797363,0.58022045 Z")}
+    ],
+    y: [
+      {fill:"#999999",transform:[0.09030857,0,0,0.09928083,-1.3216095,-3.3476837],path:new Path2D("m 108.7314,101.56052 9e-5,-29.896072 a 3.0551618,3.0551618 30.00032 0 0 -4.58272,-2.645869 l -25.891101,14.94796 a 9.1654527,9.1654527 120.0005 0 0 -4.58279,7.937463 l -2.87e-4,29.896518 a 3.0551169,3.0551169 30.000322 0 0 4.582671,2.64584 l 25.891397,-14.94834 a 9.1654521,9.1654521 120.00014 0 0 4.58274,-7.9375 z")},
+      {fill:"#1a1a1a",transform:[0.09030857,0,0,0.09928083,-1.3216095,-3.3476837],path:new Path2D("m 31.269457,101.5629 -9.6e-5,-29.896069 a 3.0551618,3.0551618 149.99968 0 1 4.582722,-2.645869 l 25.891102,14.94796 a 9.1654504,9.1654504 59.999503 0 1 4.582789,7.937463 l 2.8e-4,29.896515 a 3.0551173,3.0551173 149.99969 0 1 -4.582672,2.64584 L 35.852196,109.5004 a 9.1654533,9.1654533 59.999865 0 1 -4.582739,-7.9375 z")},
+      {fill:"#e6e6e6",transform:[0.09030857,0,0,0.09928083,-1.3216095,-3.3476837],path:new Path2D("M 65.417133,42.415484 39.526329,57.363438 a 3.0551619,3.0551619 90.000316 0 0 -2.9e-5,5.291688 l 25.890862,14.94837 a 9.1654538,9.1654538 5.0263966e-4 0 0 9.16544,8e-5 L 100.4739,62.655563 a 3.0551161,3.0551161 90.000317 0 0 3e-5,-5.291629 L 74.582573,42.415505 a 9.1654533,9.1654533 1.31093e-4 0 0 -9.16544,-2.1e-5 z")},
+      {fill:"#00ff00",path:new Path2D("M 0.11087094,3.954381 C 0.03716054,4.1999213 -4.500263e-6,4.4503286 0,4.7014365 1.8864515e-5,6.6714434 2.2385874,8.2684389 4.9999998,8.2684444 7.7614125,8.2684389 9.9999819,6.6714434 10,4.7014365 10.000005,4.4503286 9.962851,4.1999213 9.8891306,3.954381 L 8.9503799,4.4206333 c 0.015985,0.093248 0.024003,0.1869886 0.024007,0.2808032 3.5e-6,1.4135732 -1.7793923,2.559499 -3.9743888,2.5594976 -2.1949956,1.4e-6 -3.9743917,-1.1459244 -3.9743877,-2.5594976 -8.7e-6,-0.093814 0.00798,-0.1875563 0.023963,-0.2808032 L 0.5802221,4.1875074 Z")}
+    ],
+    z: [
+      {fill:"#999999",transform:[0.09030857,0,0,0.09928083,-1.3216095,-3.3476837],path:new Path2D("m 108.7314,101.56052 9e-5,-29.896072 a 3.0551618,3.0551618 30.00032 0 0 -4.58272,-2.645869 l -25.891101,14.94796 a 9.1654527,9.1654527 120.0005 0 0 -4.58279,7.937463 l -2.87e-4,29.896518 a 3.0551169,3.0551169 30.000322 0 0 4.582671,2.64584 l 25.891397,-14.94834 a 9.1654521,9.1654521 120.00014 0 0 4.58274,-7.9375 z")},
+      {fill:"#1a1a1a",transform:[0.09030857,0,0,0.09928083,-1.3216095,-3.3476837],path:new Path2D("m 31.269457,101.5629 -9.6e-5,-29.896069 a 3.0551618,3.0551618 149.99968 0 1 4.582722,-2.645869 l 25.891102,14.94796 a 9.1654504,9.1654504 59.999503 0 1 4.582789,7.937463 l 2.8e-4,29.896515 a 3.0551173,3.0551173 149.99969 0 1 -4.582672,2.64584 L 35.852196,109.5004 a 9.1654533,9.1654533 59.999865 0 1 -4.582739,-7.9375 z")},
+      {fill:"#e6e6e6",transform:[0.09030857,0,0,0.09928083,-1.3216095,-3.3476837],path:new Path2D("M 65.417133,42.415484 39.526329,57.363438 a 3.0551619,3.0551619 90.000316 0 0 -2.9e-5,5.291688 l 25.890862,14.94837 a 9.1654538,9.1654538 5.0263966e-4 0 0 9.16544,8e-5 L 100.4739,62.655563 a 3.0551161,3.0551161 90.000317 0 0 3e-5,-5.291629 L 74.582573,42.415505 a 9.1654533,9.1654533 1.31093e-4 0 0 -9.16544,-2.1e-5 z")},
+      {fill:"#0000ff",path:new Path2D("M 5.6872071,9.8891282 C 5.932675,9.9628383 6.1830092,10.000005 6.4340421,9.999999 8.4034701,9.9999811 9.9999937,7.761411 10,5.0000001 9.9999937,2.2385877 8.4034701,1.8065014e-5 6.4340421,0 6.1830092,-5.5103894e-6 5.932675,0.03715497 5.6872071,0.11086984 L 6.1533226,1.0496204 c 0.09322,-0.015991 0.186933,-0.024003 0.2807195,-0.024008 1.4131578,-3.4e-6 2.558747,1.7793929 2.5587445,3.9743889 2.5e-6,2.1949944 -1.1455877,3.9743918 -2.5587445,3.9743879 -0.093785,9.3e-6 -0.1874996,-0.00799 -0.2807195,-0.023964 L 5.9202652,9.4197776 Z")}
+    ]
+  };
+
+  function drawAxisIcon(axis, x, y, size) {
+    const parts = AXIS_ICON_PATHS[axis];
+    if (!parts) return;
+
+    ctx.save();
+    ctx.translate(x,y);
+    ctx.scale(size/10,size/10);
+    for (const part of parts) {
+      ctx.save();
+      if (part.transform) ctx.transform(...part.transform);
+      ctx.fillStyle = part.fill;
+      ctx.fill(part.path);
+      ctx.restore();
+    }
+    ctx.restore();
+  }
+
+  function drawCombinedReadoutCell(
+    x, y, width, height,
+    iconAxis, angleValue,
+    vpTitle, vpValue, vpAccent,
+    screenSize
+  ) {
+    const radius = Math.max(3.5, Math.min(width,height) * 0.12);
+    const inset = Math.max(4.5, Math.min(width,height) * 0.10);
+    const itemGap = Math.max(3, screenSize * 0.0053);
+    const groupGap = Math.max(6, screenSize * 0.0093);
+    const dividerGap = Math.max(5, screenSize * 0.0075);
+    const dividerWidth = Math.max(1, screenSize * 0.0014);
+
+    // Keep each global rotation and its matching VP data on one row.
+    // Canvas has no layout engine, because apparently suffering builds character.
+    let valueSize = Math.max(6, Math.min(16, screenSize * 0.016));
+    let labelSize = valueSize * 1.2;
+    let iconSize = Math.max(16, Math.min(35, screenSize * 0.0387));
+    const availableWidth = width - inset * 2;
+    const availableHeight = height - inset * 2;
+
+    while (valueSize > 5) {
+      iconSize = Math.max(valueSize * 2.05, Math.min(35, screenSize * 0.0387));
+      labelSize = iconSize;
+
+      // Rotation values use the same text height as the VP labels, but remain
+      // regular weight. Reserve a fixed maximum angle slot so the divider
+      // remains stationary while the live value changes.
+      ctx.font = `400 ${labelSize}px system-ui, sans-serif`;
+      const angleSlotWidth = ctx.measureText("−180°").width;
+
+      const vpValueSize = labelSize * 0.8;
+      ctx.font = `400 ${vpValueSize}px system-ui, sans-serif`;
+      const vpValueWidth = ctx.measureText(vpValue).width;
+
+      ctx.font = `750 ${labelSize}px system-ui, sans-serif`;
+      const vpTitleWidth = ctx.measureText(vpTitle).width;
+
+      const contentWidth = iconSize + itemGap + angleSlotWidth +
+        dividerGap + dividerWidth + dividerGap +
+        vpTitleWidth + itemGap + vpValueWidth;
+      const contentHeight = Math.max(iconSize,labelSize,vpValueSize);
+
+      if (contentWidth <= availableWidth && contentHeight <= availableHeight) break;
+      valueSize -= 0.5;
     }
 
-    for (let i = 0; i <= 10; i++) {
-      const x = (i / 10) * w;
-      const y = (i / 10) * h;
-      add(x, 0);
-      add(x, h);
-      add(0, y);
-      add(w, y);
-    }
+    iconSize = Math.max(valueSize * 2.05, Math.min(35, screenSize * 0.0387));
+    labelSize = iconSize;
+    const vpValueSize = labelSize * 0.8;
+    const centreY = y + height * 0.5;
 
-    return points;
+    ctx.save();
+    roundedRectPath(x,y,width,height,radius);
+    ctx.fillStyle = "rgba(9,13,19,.86)";
+    ctx.fill();
+    ctx.strokeStyle = "rgba(225,235,247,.24)";
+    ctx.lineWidth = Math.max(1,Math.min(width,height)*0.018);
+    ctx.stroke();
+
+    let cursorX = x + inset;
+    drawAxisIcon(iconAxis,cursorX,centreY-iconSize*0.5,iconSize);
+    cursorX += iconSize + itemGap;
+
+    ctx.fillStyle = "rgba(242,247,253,.94)";
+    ctx.font = `400 ${labelSize}px system-ui, sans-serif`;
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    const angleSlotWidth = ctx.measureText("−180°").width;
+    ctx.fillText(angleValue,cursorX,centreY);
+    cursorX += angleSlotWidth + dividerGap;
+
+    ctx.beginPath();
+    ctx.moveTo(cursorX, y + inset * 0.75);
+    ctx.lineTo(cursorX, y + height - inset * 0.75);
+    ctx.strokeStyle = "rgba(225,235,247,.32)";
+    ctx.lineWidth = dividerWidth;
+    ctx.stroke();
+    cursorX += dividerWidth + dividerGap;
+
+    ctx.fillStyle = vpAccent;
+    ctx.font = `750 ${labelSize}px system-ui, sans-serif`;
+    ctx.fillText(vpTitle,cursorX,centreY);
+    cursorX += ctx.measureText(vpTitle).width + itemGap;
+
+    ctx.fillStyle = "rgba(242,247,253,.94)";
+    ctx.font = `400 ${vpValueSize}px system-ui, sans-serif`;
+    const vpValueMaxWidth = Math.max(12,x+width-inset-cursorX);
+    ctx.fillText(vpValue,cursorX,centreY,vpValueMaxWidth);
+    ctx.restore();
   }
 
-  function drawGuidelines(vanishing, w, h, fisheye) {
-    const intercepts = frameGridIntercepts(w, h);
-    const axisSets = [
-      {color: COLORS.x, vps: fisheye ? [vanishing.x.positive, vanishing.x.negative] : [vanishing.x.positive]},
-      {color: COLORS.y, vps: fisheye ? [vanishing.y.positive, vanishing.y.negative] : [vanishing.y.positive]},
-      {color: COLORS.z, vps: fisheye ? [vanishing.z.positive, vanishing.z.negative] : [vanishing.z.positive]}
+  function normaliseDegrees(angle) {
+    let degrees = angle * 180 / Math.PI;
+    degrees = ((degrees + 180) % 360 + 360) % 360 - 180;
+    return Math.abs(degrees) < 0.000001 ? 0 : degrees;
+  }
+
+  function globalEulerFromQuaternion(q) {
+    // Decompose the actual cube orientation using the same global-axis order
+    // as the original absolute setup: Rx(pitch) · Rz(roll) · Ry(yaw).
+    // This makes the legend describe the final world orientation while the
+    // sliders remain incremental rotations about the cube's current axes.
+    const {w,x,y,z} = Q.normalize(q);
+
+    const m00 = 1 - 2*(y*y + z*z);
+    const m01 = 2*(x*y - z*w);
+    const m02 = 2*(x*z + y*w);
+    const m10 = 2*(x*y + z*w);
+    const m11 = 1 - 2*(x*x + z*z);
+    const m20 = 2*(x*z - y*w);
+    const m21 = 2*(y*z + x*w);
+    const m22 = 1 - 2*(x*x + y*y);
+
+    const sinRoll = Math.max(-1,Math.min(1,-m01));
+    const roll = Math.asin(sinRoll);
+    const cosRoll = Math.cos(roll);
+
+    let pitch;
+    let yaw;
+    if (Math.abs(cosRoll) > 1e-7) {
+      yaw = Math.atan2(m02,m00);
+      pitch = Math.atan2(m21,m11);
+    } else {
+      // At ±90° global Z rotation, X and Y are mathematically coupled.
+      // Choose yaw = 0 and place the combined rotation in pitch so the
+      // displayed orientation remains stable and still reconstructs q.
+      yaw = 0;
+      pitch = sinRoll > 0
+        ? Math.atan2(m20,m10)
+        : Math.atan2(-m20,m22);
+    }
+
+    return {
+      pitch: normaliseDegrees(pitch),
+      yaw: normaliseDegrees(yaw),
+      roll: normaliseDegrees(roll)
+    };
+  }
+
+  function drawCanvasReadouts(vanishing, viewVanishing, state, w, h) {
+    const screenSize = Math.min(w,h);
+    const outerMargin = Math.max(6,screenSize*0.012);
+    const panelPadding = Math.max(4.5,screenSize*0.008);
+    const columnGap = Math.max(3.5,screenSize*0.006);
+    const panelWidth = w-outerMargin*2;
+    const availableCellHeight = Math.max(38,h-outerMargin*2-panelPadding*2);
+    const cellHeight = Math.min(Math.max(38,screenSize*0.07),availableCellHeight);
+    const panelHeight = panelPadding*2+cellHeight;
+    const panelX = outerMargin;
+    const panelY = h-outerMargin-panelHeight;
+    const cellWidth = (panelWidth-panelPadding*2-columnGap*2)/3;
+    const cellY = panelY+panelPadding;
+
+    const cssScaleY = canvasShell.clientHeight / Math.max(1,h);
+    const toggleBottom = Math.max(8,(outerMargin+panelHeight)*cssScaleY-10);
+    legendPanelToggle.style.bottom = `${toggleBottom}px`;
+
+    ctx.save();
+    roundedRectPath(panelX,panelY,panelWidth,panelHeight,Math.max(8,screenSize*0.014));
+    ctx.fillStyle = "rgba(4,7,11,.58)";
+    ctx.fill();
+    ctx.strokeStyle = "rgba(230,238,248,.18)";
+    ctx.lineWidth = Math.max(1,screenSize*0.002);
+    ctx.stroke();
+    ctx.restore();
+
+    // Legend angles are global/world-axis Euler values derived from the cube's
+    // actual quaternion. Slider outputs remain local incremental controls.
+    const globalAngles = globalEulerFromQuaternion(cubeRotation.q);
+    const combinedCells = [
+      ["x",`${globalAngles.pitch.toFixed(0)}°`,"VP X",formatAxisVPCompact(vanishing.x,viewVanishing.x,w,h,state.fisheye),VP_COLORS.x],
+      ["y",`${globalAngles.yaw.toFixed(0)}°`,"VP Y",formatAxisVPCompact(vanishing.y,viewVanishing.y,w,h,state.fisheye),VP_COLORS.y],
+      ["z",`${globalAngles.roll.toFixed(0)}°`,"VP Z",formatAxisVPCompact(vanishing.z,viewVanishing.z,w,h,state.fisheye),VP_COLORS.z]
     ];
 
-    for (const axis of axisSets) {
-      const stroke = hexToRgba(axis.color, 0.12);
-      for (const vp of axis.vps) {
-        if (!vp || vp.visible === false || vp.finite === false || !Number.isFinite(vp.x) || !Number.isFinite(vp.y)) continue;
-        for (const p of intercepts) {
-          drawSegment(p, {x: vp.x, y: vp.y}, stroke, 2.4);
-        }
-      }
+    for (let i=0;i<3;i++) {
+      const x = panelX+panelPadding+i*(cellWidth+columnGap);
+      drawCombinedReadoutCell(x,cellY,cellWidth,cellHeight,...combinedCells[i],screenSize);
     }
   }
 
   function readState() {
     return {
       cubeSize: +controls.cubeSize.value,
+      cubeX: +controls.cubeX.value,
       cubeY: +controls.cubeY.value,
       cubeDepth: +controls.cubeDepth.value,
       yaw: +controls.yaw.value,
@@ -1051,33 +2165,76 @@
       fov: +controls.fov.value,
       cameraHeight: +controls.cameraHeight.value,
       cameraPitch: +controls.cameraPitch.value,
-      fisheye: controls.fisheye.checked,
-      guidelines: controls.guidelines.checked
+      fisheye: projectionMode === "fisheye"
     };
   }
 
   function updateOutputs(s) {
     outputs.cubeSize.value = s.cubeSize.toFixed(2);
+    outputs.cubeX.value = s.cubeX.toFixed(2);
     outputs.cubeY.value = s.cubeY.toFixed(2);
     outputs.cubeDepth.value = s.cubeDepth.toFixed(2);
     outputs.yaw.value = `${s.yaw.toFixed(0)}°`;
     outputs.roll.value = `${s.roll.toFixed(0)}°`;
     outputs.pitch.value = `${s.pitch.toFixed(0)}°`;
-    outputs.fov.value = s.fisheye ? "180° circular" : `${s.fov.toFixed(0)}°`;
+    outputs.fov.value = s.fisheye ? "180° circular" : `${s.fov.toFixed(0)}° diag`;
     controls.fov.disabled = s.fisheye;
+    projectionButtons.rectilinear.classList.toggle("is-active",!s.fisheye);
+    projectionButtons.rectilinear.classList.toggle("is-inactive",s.fisheye);
+    projectionButtons.rectilinear.setAttribute("aria-pressed",String(!s.fisheye));
+    projectionButtons.fisheye.classList.toggle("is-active",s.fisheye);
+    projectionButtons.fisheye.classList.toggle("is-inactive",!s.fisheye);
+    projectionButtons.fisheye.setAttribute("aria-pressed",String(s.fisheye));
     outputs.cameraHeight.value = s.cameraHeight.toFixed(2);
     outputs.cameraPitch.value = `${s.cameraPitch.toFixed(0)}°`;
   }
 
+  function updateLayoutMetrics() {
+    const shellRect = canvasShell.getBoundingClientRect();
+    const workspaceRect = document.querySelector(".workspace").getBoundingClientRect();
+    const width = Math.max(1, shellRect.width);
+    const squareSize = width / 10;
+
+    // Match the lower viewport gap to the horizontal outer gap around the
+    // canvas/control pair. Height is no longer rounded to complete grid rows.
+    const sidePadding = Math.max(0, Math.min(
+      workspaceRect.left,
+      window.innerWidth - workspaceRect.right
+    ));
+    const availableHeight = window.innerHeight - shellRect.top - sidePadding;
+    const narrowLayout = window.matchMedia("(orientation: portrait), (max-width: 1100px)").matches;
+
+    // In the stacked layout the controls sit below the canvas. Do not let the
+    // canvas consume the complete remaining viewport, otherwise the controls
+    // are correctly laid out but stranded below the fold. Reserve roughly 38%
+    // of the visible height for the first control row and cap the canvas to its
+    // available width so portrait screens do not produce an excessively tall
+    // drawing area.
+    const height = narrowLayout
+      ? Math.max(260, Math.min(width, availableHeight * 0.62))
+      : Math.max(180, availableHeight);
+    const uiScale = Math.max(0.58, Math.min(1, height / 720));
+
+    viewState.gridRows = height / squareSize;
+    document.documentElement.style.setProperty("--canvas-display-height", `${height}px`);
+    document.documentElement.style.setProperty("--ui-scale", uiScale.toFixed(3));
+  }
+
   function resizeCanvas() {
+    updateLayoutMetrics();
     const rect = canvas.getBoundingClientRect();
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    const size = Math.max(320, Math.round(rect.width * dpr));
-    if (canvas.width !== size || canvas.height !== size) {
-      canvas.width = size;
-      canvas.height = size;
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+    let width = Math.max(320, Math.round(rect.width * dpr));
+    let height = Math.max(180, Math.round(rect.height * dpr));
+    const backingScale = Math.min(1, 2048 / width, 2048 / height);
+    width = Math.max(1, Math.round(width * backingScale));
+    height = Math.max(1, Math.round(height * backingScale));
+
+    if (canvas.width !== width || canvas.height !== height) {
+      canvas.width = width;
+      canvas.height = height;
     }
-    return {w:size,h:size,dpr};
+    return {w:width,h:height,dpr:dpr * backingScale};
   }
 
   function canvasPointFromEvent(event) {
@@ -1118,14 +2275,47 @@
     return best;
   }
 
-  function projectedEdgeMidpointFor(state, edge) {
-    const cam = setupCamera(state, canvas.width, canvas.height);
-    const cube = cubeGeometry(state);
+  function projectedEdgeMidpointFor(state,edge,orientation=cubeRotation.q) {
+    const cam = setupCamera(state,canvas.width,canvas.height);
+    const cube = cubeGeometry(state,orientation);
     const [aIdx,bIdx] = edge;
     const a = projectWorld(cube.world[aIdx],cam);
     const b = projectWorld(cube.world[bIdx],cam);
     if (!a || !b) return null;
     return {x:(a.x+b.x)/2,y:(a.y+b.y)/2};
+  }
+
+  function edgeDepthMetric(edge, cube, cam) {
+    const [aIdx,bIdx] = edge;
+
+    // Rectilinear depth is measured along the camera's forward direction.
+    // In fisheye mode, radial camera distance gives the more useful ordering.
+    if (!cam.fisheye) {
+      const aDepth = worldToCamera(cube.world[aIdx],cam).z;
+      const bDepth = worldToCamera(cube.world[bIdx],cam).z;
+      return (aDepth+bDepth)*0.5;
+    }
+
+    const aDepth = V.len(V.sub(cube.world[aIdx],cam.position));
+    const bDepth = V.len(V.sub(cube.world[bIdx],cam.position));
+    return (aDepth+bDepth)*0.5;
+  }
+
+  function isRearParallelEdge(hit, state) {
+    const cam = setupCamera(state,canvas.width,canvas.height);
+    const cube = cubeGeometry(state);
+    const parallelEdges = cube.edges
+      .filter(edge => edge[2] === hit.axis)
+      .map(edge => ({edge,depth:edgeDepthMetric(edge,cube,cam)}))
+      .sort((a,b) => a.depth-b.depth);
+
+    const hitIndex = parallelEdges.findIndex(({edge}) =>
+      edge[0] === hit.edge[0] && edge[1] === hit.edge[1]
+    );
+
+    // Each axis has four parallel edges. The farther two use the reversed
+    // drag sign so front and rear edges rotate naturally in screen space.
+    return hitIndex >= Math.floor(parallelEdges.length/2);
   }
 
   function chooseRotationControl(hit, state) {
@@ -1136,15 +2326,13 @@
     const ny = ex/el;
     const base = {x:(hit.a.x+hit.b.x)/2,y:(hit.a.y+hit.b.y)/2};
 
-    const nudge = value => value >= 45 ? value - 1 : value + 1;
-    const tests = {
-      yaw: {...state, yaw: nudge(state.yaw)},
-      roll: {...state, roll: nudge(state.roll)},
-      pitch: {...state, pitch: nudge(state.pitch)}
-    };
+    const tests = Object.fromEntries(Object.keys(ROTATION_AXES).map(controlName => [
+      controlName,
+      orientationWithLocalDelta(cubeRotation.q,controlName,1)
+    ]));
 
-    const scores = Object.fromEntries(Object.entries(tests).map(([control,testState]) => {
-      const midpoint = projectedEdgeMidpointFor(testState,hit.edge);
+    const scores = Object.fromEntries(Object.entries(tests).map(([control,testOrientation]) => {
+      const midpoint = projectedEdgeMidpointFor(state,hit.edge,testOrientation);
       const score = midpoint
         ? Math.abs((midpoint.x-base.x)*nx + (midpoint.y-base.y)*ny)
         : 0;
@@ -1155,13 +2343,17 @@
       scores[current] > scores[best] ? current : best
     , "yaw");
 
-    return {control, nx, ny};
+    return {
+      control,
+      nx,
+      ny,
+      dragSign:isRearParallelEdge(hit,state) ? -1 : 1
+    };
   }
 
-  function draw() {
-    const {w,h} = resizeCanvas();
+  function renderScene(w,h,{updateUi=true}={}) {
     const state = readState();
-    updateOutputs(state);
+    if (updateUi) updateOutputs(state);
 
     ctx.clearRect(0,0,w,h);
 
@@ -1173,6 +2365,22 @@
     ctx.fillRect(0,0,w,h);
 
     const cam = setupCamera(state,w,h);
+    const visible = readCanvasVisibility();
+    if (visible.frameGrid) drawFrameGrid(w,h);
+
+    if (cam.fisheye) {
+      const centre = canvasViewPoint({x:cam.cx,y:cam.cy});
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(centre.x,centre.y,canvasViewRadius(cam.fisheyeRadius),0,Math.PI*2);
+      ctx.clip();
+    }
+
+    if (visible.guidelines) drawFisheyeGreatCircleGuides(cam,cubeRotation.q);
+    if (visible.groundPlane) drawGroundPlane(cam);
+    if (visible.groundGrid) drawGroundGrid(cam,w,h);
+    if (visible.horizon) drawHorizon(cam,w,h);
+
     const cube = cubeGeometry(state);
     const projected = cube.world.map(p => projectWorld(p,cam));
     viewState.latestProjected = projected;
@@ -1184,37 +2392,49 @@
       y: projectAxisVanishing(cube.axes.y,cam),
       z: projectAxisVanishing(cube.axes.z,cam)
     };
+    const rawVanishing = {
+      x: projectAxisVanishingRaw(cube.axes.x,cam),
+      y: projectAxisVanishingRaw(cube.axes.y,cam),
+      z: projectAxisVanishingRaw(cube.axes.z,cam)
+    };
 
-    drawFrameGrid(w,h);
-    if (state.guidelines) drawGuidelines(vanishing,w,h,state.fisheye);
+    // Apply apparent-size attenuation in both projection modes so local-Z
+    // movement can make the cube genuinely disappear at practical infinity.
+    const cubeLod = cubeApparentLod(projected);
 
-    if (cam.fisheye) {
-      ctx.save();
-      ctx.beginPath();
-      ctx.arc(cam.cx,cam.cy,cam.fisheyeRadius,0,Math.PI*2);
-      ctx.clip();
-    }
-
-    drawGroundPlane(cam);
-    drawGroundGrid(cam,w,h);
-    drawHorizon(cam,w,h);
-    drawConstructionLines(cube.world,projected,cube.edges,cube.axes,vanishing,cam,w,h);
-    drawCube(cube.world,projected,cube.edges,cam);
+    if (visible.cube) drawClosestCubeFaces(cube.world,projected,cam,cubeLod);
+    if (visible.guidelines) drawConstructionLines(cube.world,projected,cube.edges,cube.axes,vanishing,cam,w,h);
+    if (visible.cubeAxes) drawCubeAxes(cube.center,cube.axes,cube.size,cam,cubeLod);
+    if (visible.cube) drawCube(cube.world,projected,cube.edges,cam,cubeLod);
 
     if (cam.fisheye) ctx.restore();
+    drawFisheyeOutsideMask(cam,w,h);
 
-    if (cam.fisheye) {
-      drawVanishingPoint(vanishing.x.positive,COLORS.x,"VP +X",w,h);
-      drawVanishingPoint(vanishing.x.negative,COLORS.x,"VP −X",w,h);
-      drawVanishingPoint(vanishing.y.positive,COLORS.y,"VP +Y",w,h);
-      drawVanishingPoint(vanishing.y.negative,COLORS.y,"VP −Y",w,h);
-      drawVanishingPoint(vanishing.z.positive,COLORS.z,"VP +Z",w,h);
-      drawVanishingPoint(vanishing.z.negative,COLORS.z,"VP −Z",w,h);
-      drawFisheyeBoundary(cam);
+    if (visible.projectionBoundary) {
+      drawVisionConeBoundary(cam);
+      if (cam.fisheye) drawFisheyeBoundary(cam);
+    }
+
+    if (visible.vanishingPoints) {
+      if (cam.fisheye) {
+        drawVanishingPoint(vanishing.x.positive,VP_COLORS.x,"VP +X",w,h,VP_LABEL_COLORS.x);
+        drawVanishingPoint(vanishing.x.negative,VP_COLORS.x,"VP −X",w,h,VP_LABEL_COLORS.x);
+        drawVanishingPoint(vanishing.y.positive,VP_COLORS.y,"VP +Y",w,h,VP_LABEL_COLORS.y);
+        drawVanishingPoint(vanishing.y.negative,VP_COLORS.y,"VP −Y",w,h,VP_LABEL_COLORS.y);
+        drawVanishingPoint(vanishing.z.positive,VP_COLORS.z,"VP +Z",w,h,VP_LABEL_COLORS.z);
+        drawVanishingPoint(vanishing.z.negative,VP_COLORS.z,"VP −Z",w,h,VP_LABEL_COLORS.z);
+      } else {
+        drawVanishingPoint(vanishing.x.positive,VP_COLORS.x,"VP X",w,h,VP_LABEL_COLORS.x);
+        drawVanishingPoint(vanishing.y.positive,VP_COLORS.y,"VP Y",w,h,VP_LABEL_COLORS.y);
+        drawVanishingPoint(vanishing.z.positive,VP_COLORS.z,"VP Z",w,h,VP_LABEL_COLORS.z);
+      }
+    }
+
+    // Report camera-space projection coordinates, unaffected by canvas navigation.
+    if (legendPanelExpanded) {
+      drawCanvasReadouts(rawVanishing,vanishing,state,w,h);
     } else {
-      drawVanishingPoint(vanishing.x.positive,COLORS.x,"VP X",w,h);
-      drawVanishingPoint(vanishing.y.positive,COLORS.y,"VP Y",w,h);
-      drawVanishingPoint(vanishing.z.positive,COLORS.z,"VP Z",w,h);
+      legendPanelToggle.style.bottom = "8px";
     }
 
     ctx.save();
@@ -1223,23 +2443,155 @@
     ctx.strokeRect(1,1,w-2,h-2);
     ctx.restore();
 
-    outputs.vpX.textContent = formatAxisVP(vanishing.x,w,h,state.fisheye);
-    outputs.vpY.textContent = formatAxisVP(vanishing.y,w,h,state.fisheye);
-    outputs.vpZ.textContent = formatAxisVP(vanishing.z,w,h,state.fisheye);
+    }
+
+  function draw() {
+    const {w,h} = resizeCanvas();
+    renderScene(w,h,{updateUi:true});
   }
 
+  let drawRequested = false;
+  function requestDraw() {
+    if (drawRequested) return;
+    drawRequested = true;
+    requestAnimationFrame(() => {
+      drawRequested = false;
+      draw();
+    });
+  }
+
+  const rotationControlByElement = new Map([
+    [controls.yaw,"yaw"],
+    [controls.roll,"roll"],
+    [controls.pitch,"pitch"]
+  ]);
+
+  const translationControlByElement = new Map([
+    [controls.cubeX,"cubeX"],
+    [controls.cubeY,"cubeY"],
+    [controls.cubeDepth,"cubeDepth"]
+  ]);
+
   Object.values(controls).forEach(el => {
-    el.addEventListener("input", draw);
-    el.addEventListener("change", draw);
+    const rotationControlName = rotationControlByElement.get(el);
+    const translationControlName = translationControlByElement.get(el);
+
+    el.addEventListener("input", () => {
+      if (rotationControlName) applyLocalSliderRotation(rotationControlName);
+      if (translationControlName) applyLocalSliderTranslation(translationControlName);
+      requestDraw();
+    });
+
+    el.addEventListener("change", () => {
+      if (rotationControlName) applyLocalSliderRotation(rotationControlName);
+      if (translationControlName) applyLocalSliderTranslation(translationControlName);
+      requestDraw();
+    });
+
     el.addEventListener("dblclick", event => {
       event.preventDefault();
-      if (el.type === "checkbox") {
+      if (rotationControlName) {
+        // A single Euler component cannot be reset independently after local
+        // rotations, so reset the complete cube orientation coherently.
+        resetCubeOrientation();
+      } else if (translationControlName) {
+        el.value = el.dataset.default;
+        applyLocalSliderTranslation(translationControlName,+el.value);
+      } else if (el.type === "checkbox") {
         el.checked = el.dataset.default === "true";
       } else {
         el.value = el.dataset.default;
       }
-      draw();
+      requestDraw();
     });
+  });
+
+  // Keep FOV rendering live even in browsers or embedded viewers that are
+  // inconsistent about range-control event coalescing.
+  controls.fov.addEventListener("input", requestDraw, {passive:true});
+  controls.fov.addEventListener("change", requestDraw, {passive:true});
+
+  projectionButtons.rectilinear.addEventListener("click", () => {
+    projectionMode = "rectilinear";
+    requestDraw();
+  });
+
+  projectionButtons.fisheye.addEventListener("click", () => {
+    projectionMode = "fisheye";
+    requestDraw();
+  });
+
+  Object.values(canvasElementInputs).forEach(input => {
+    input.addEventListener("change", requestDraw);
+  });
+
+  canvasElementsToggle.addEventListener("click", event => {
+    event.preventDefault();
+    event.stopPropagation();
+    canvasElementsExpanded = !canvasElementsExpanded;
+    canvasElementsPanel.classList.toggle("is-collapsed",!canvasElementsExpanded);
+    canvasElementsToggle.setAttribute("aria-expanded",String(canvasElementsExpanded));
+    canvasElementsToggle.setAttribute("aria-label",canvasElementsExpanded ? "Collapse Elements" : "Expand Elements");
+  });
+
+  function exportCanvasPng() {
+    const exportSize = 2000;
+    const originalWidth = canvas.width;
+    const originalHeight = canvas.height;
+
+    // Render the scene again at the final pixel dimensions. This preserves
+    // line geometry, curves, labels and projection calculations at native
+    // export resolution instead of enlarging the displayed canvas bitmap.
+    canvas.width = exportSize;
+    canvas.height = exportSize;
+    renderScene(exportSize,exportSize,{updateUi:false});
+
+    const pngUrl = canvas.toDataURL("image/png");
+
+    // Restore the interactive display immediately after the synchronous
+    // export snapshot has been encoded.
+    canvas.width = originalWidth;
+    canvas.height = originalHeight;
+    draw();
+
+    const link = document.createElement("a");
+    link.href = pngUrl;
+    link.download = "perspective_cube_canvas_2000x2000.png";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  }
+
+  exportPngButton.addEventListener("click", exportCanvasPng);
+
+  sidePanelToggle.addEventListener("click", event => {
+    event.preventDefault();
+    event.stopPropagation();
+    sidePanelExpanded = !sidePanelExpanded;
+    workspace.classList.toggle("side-collapsed",!sidePanelExpanded);
+    sidePanel.classList.toggle("is-collapsed",!sidePanelExpanded);
+    sidePanelToggle.textContent = sidePanelExpanded ? "›" : "‹";
+    sidePanelToggle.setAttribute("aria-expanded",String(sidePanelExpanded));
+    sidePanelToggle.setAttribute("aria-label",sidePanelExpanded ? "Collapse control panel" : "Expand control panel");
+    sidePanelToggle.title = sidePanelExpanded ? "Collapse control panel" : "Expand control panel";
+    requestAnimationFrame(requestDraw);
+  });
+
+  legendPanelToggle.addEventListener("click", event => {
+    event.preventDefault();
+    event.stopPropagation();
+    legendPanelExpanded = !legendPanelExpanded;
+    legendPanelToggle.textContent = legendPanelExpanded ? "▾" : "▴";
+    legendPanelToggle.setAttribute("aria-expanded",String(legendPanelExpanded));
+    legendPanelToggle.setAttribute("aria-label",legendPanelExpanded ? "Collapse canvas legend" : "Expand canvas legend");
+    legendPanelToggle.title = legendPanelExpanded ? "Collapse canvas legend" : "Expand canvas legend";
+    requestDraw();
+  });
+
+  workspace.addEventListener("transitionend", event => {
+    if (event.propertyName === "grid-template-columns" || event.propertyName === "gap") {
+      requestDraw();
+    }
   });
 
   canvas.addEventListener("pointerdown", event => {
@@ -1262,6 +2614,7 @@
       viewState.rotateControl = choice.control;
       viewState.rotateNormalX = choice.nx;
       viewState.rotateNormalY = choice.ny;
+      viewState.rotateDirection = choice.dragSign;
       viewState.startYaw = +controls.yaw.value;
       viewState.startRoll = +controls.roll.value;
       viewState.startPitch = +controls.pitch.value;
@@ -1278,22 +2631,22 @@
       const dx = p.x-viewState.startX;
       const dy = p.y-viewState.startY;
       const signedDistance = dx*viewState.rotateNormalX + dy*viewState.rotateNormalY;
-      const degrees = signedDistance * 0.22;
+      const degrees = signedDistance * 0.22 * viewState.rotateDirection;
 
       if (viewState.rotateControl === "yaw") {
-        controls.yaw.value = Math.max(-45,Math.min(45,viewState.startYaw+degrees));
+        setRotationSliderValue("yaw",Math.max(-90,Math.min(90,viewState.startYaw+degrees)));
       } else if (viewState.rotateControl === "roll") {
-        controls.roll.value = Math.max(-45,Math.min(45,viewState.startRoll+degrees));
+        setRotationSliderValue("roll",Math.max(-90,Math.min(90,viewState.startRoll+degrees)));
       } else {
-        controls.pitch.value = Math.max(-45,Math.min(45,viewState.startPitch+degrees));
+        setRotationSliderValue("pitch",Math.max(-90,Math.min(90,viewState.startPitch+degrees)));
       }
-      draw();
+      requestDraw();
     } else {
       viewState.panX += p.x-viewState.lastX;
       viewState.panY += p.y-viewState.lastY;
       viewState.lastX = p.x;
       viewState.lastY = p.y;
-      draw();
+      requestDraw();
     }
   });
 
@@ -1302,6 +2655,7 @@
     viewState.dragging = false;
     viewState.dragMode = null;
     viewState.rotateControl = null;
+    viewState.rotateDirection = 1;
     canvas.classList.remove("dragging");
     if (event && canvas.hasPointerCapture(event.pointerId)) {
       canvas.releasePointerCapture(event.pointerId);
@@ -1317,38 +2671,37 @@
   canvas.addEventListener("dblclick", event => {
     event.preventDefault();
 
-    // Reset every slider while deliberately preserving the fisheye checkbox.
+    // Reset every slider while deliberately preserving the projection mode.
     Object.values(controls).forEach(control => {
       if (control.type === "range") control.value = control.dataset.default;
     });
+    resetCubeOrientation();
+    resetCubeTranslation();
 
     viewState.panX = 0;
     viewState.panY = 0;
-    draw();
+    viewState.zoom = 1;
+    requestDraw();
   });
 
   canvas.addEventListener("wheel", event => {
     event.preventDefault();
 
-    const state = readState();
-    const oldCam = setupCamera(state,canvas.width,canvas.height);
-    const oldOrigin = projectWorld({x:0,y:0,z:0},oldCam);
-
+    // Zoom the already-projected canvas image around the pointer. This is a
+    // 2D navigation transform only; it never changes camera or cube state.
+    const pointer = canvasPointFromEvent(event);
+    const canvasX = (pointer.x-viewState.panX) / viewState.zoom;
+    const canvasY = (pointer.y-viewState.panY) / viewState.zoom;
     const factor = Math.exp(-event.deltaY * 0.0012);
-    viewState.zoom = Math.min(8, Math.max(0.2, viewState.zoom * factor));
+    const nextZoom = Math.min(8,Math.max(0.2,viewState.zoom*factor));
 
-    const newCam = setupCamera(state,canvas.width,canvas.height);
-    const newOrigin = projectWorld({x:0,y:0,z:0},newCam);
-
-    if (oldOrigin && newOrigin) {
-      viewState.panX += oldOrigin.x-newOrigin.x;
-      viewState.panY += oldOrigin.y-newOrigin.y;
-    }
-
-    draw();
+    viewState.zoom = nextZoom;
+    viewState.panX = pointer.x-canvasX*nextZoom;
+    viewState.panY = pointer.y-canvasY*nextZoom;
+    requestDraw();
   }, {passive:false});
 
-  window.addEventListener("resize", draw, {passive:true});
+  window.addEventListener("resize", requestDraw, {passive:true});
   draw();
 })();
 </script>
